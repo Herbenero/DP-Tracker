@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Hellcastle Defensive Points</title>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #111; color: #0f0; }
+    input, select, button {
+      padding: 10px; margin: 8px 0; width: 100%; font-size: 18px;
+    }
+    button { background: #0f0; color: #000; font-weight: bold; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <h1>Hellcastle Defensive Points</h1>
+
+  <label>Player Name</label>
+  <input id="player" type="text">
+
+  <label>Defensive Points</label>
+  <input id="points" type="number">
+
+  <label>Month</label>
+  <select id="month">
+    <option>January</option>
+    <option>February</option>
+    <option>March</option>
+    <option>April</option>
+    <option>May</option>
+    <option>June</option>
+    <option>July</option>
+    <option>August</option>
+    <option>September</option>
+    <option>October</option>
+    <option>November</option>
+    <option>December</option>
+  </select>
+
+  <label>Day</label>
+  <input id="day" type="number" min="1" max="31">
+
+  <button onclick="submitPoints()">Submit</button>
+
+  <p id="status"></p>
+
+<script>
+const SCRIPT_URL = "YOUR_WEBAPP_URL_HERE";
+
+function submitPoints() {
+  const payload = {
+    player: document.getElementById("player").value,
+    points: document.getElementById("points").value,
+    month: document.getElementById("month").value,
+    day: document.getElementById("day").value
+  };
+
+  fetch(SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify(payload),
+    headers: { "Content-Type": "application/json" }
+  })
+  .then(r => r.json())
+  .then(res => {
+    if (res.success) {
+      document.getElementById("status").innerText = "Points added!";
+    } else {
+      document.getElementById("status").innerText = "Error: " + res.error;
+    }
+  });
+}
+</script>
+
+</body>
+</html>
