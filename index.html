@@ -1,82 +1,268 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <div style="text-align:center; margin-bottom:20px;">
-  <img src="https://drive.google.com/file/d/1_ea9y5ftMj13Jh55wZHflj98KT3_6rzh/view?usp=drive_link" 
-       alt="Hellcastle Cornhole Logo"
-       style="max-width:260px; height:auto; margin-bottom:12px;">
-</div>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JDC Challenge Scorer</title>
+    <style>
+        :root {
+            --primary: #27ae60;
+            --secondary: #2c3e50;
+            --accent: #e67e22;
+            --danger: #c0392b;
+            --light: #ecf0f1;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: white; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        .container { width: 95%; max-width: 600px; padding: 20px; }
+        .card { background: var(--secondary); padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); text-align: center; }
+        
+        #setup-screen input { padding: 12px; border-radius: 6px; border: none; width: 70%; margin-bottom: 10px; }
+        button { padding: 12px 20px; cursor: pointer; border-radius: 6px; border: none; font-weight: bold; transition: 0.2s; }
+        .btn-main { background: var(--primary); color: white; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #444; padding-bottom: 10px; }
+        .stage-info { color: var(--accent); font-weight: bold; font-size: 1.2rem; }
+        .scoreboard { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .player-pill { background: #34495e; padding: 8px 15px; border-radius: 20px; border: 2px solid transparent; min-width: 80px;}
+        .player-pill.active { border-color: var(--primary); background: #1e272e; transform: scale(1.05); }
 
-<h1 style="color:#b347ff; text-shadow:0 0 12px #b347ff;">
-  Hellcastle Defensive Points
-</h1>
-  <style>
-    body { font-family: Arial; padding: 20px; background: #111; color: #0f0; }
-    input, select, button {
-      padding: 10px; margin: 8px 0; width: 100%; font-size: 18px;
-    }
-    button { background: #0f0; color: #000; font-weight: bold; cursor: pointer; }
-  </style>
+        .dart-slots { display: flex; justify-content: center; gap: 10px; margin: 20px 0; }
+        .dart-circle { width: 50px; height: 50px; border-radius: 50%; border: 2px dashed #777; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .dart-circle.filled { border-style: solid; border-color: var(--primary); background: rgba(39, 174, 96, 0.2); }
+
+        .keypad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .keypad button { background: #546e7a; color: white; font-size: 1rem; }
+        .keypad .btn-mod { background: var(--accent); }
+        .keypad .btn-special { background: #2980b9; }
+        .keypad .btn-undo { background: var(--danger); grid-column: span 2; }
+        .keypad .btn-miss { background: #333; grid-column: span 2; }
+
+        #winner-banner { display: none; position: fixed; top: 15%; left: 50%; transform: translateX(-50%); background: var(--primary); padding: 40px; border-radius: 20px; z-index: 100; box-shadow: 0 0 50px rgba(0,0,0,0.8); width: 85%; text-align: center; border: 4px solid gold; }
+        .hidden { display: none; }
+    </style>
 </head>
 <body>
 
-  <h1>Hellcastle Defensive Points</h1>
+<div class="container">
+    <div id="setup-screen" class="card">
+        <h1>JDC Challenge</h1>
+        <p>Enter Player Names (one per line):</p>
+        <textarea id="player-input" rows="5" style="width:100%; margin-bottom:15px; border-radius:8px; padding:10px; background:#34495e; color:white; border:none;" placeholder="John&#10;Jane"></textarea>
+        <button class="btn-main" onclick="startGame()">Start Game</button>
+    </div>
 
-  <label>Player Name</label>
-  <input id="player" type="text">
+    <div id="game-screen" class="card hidden">
+        <div class="header">
+            <div id="current-target" style="font-size: 1.4rem;">Target: <strong id="target-val" style="color:var(--accent)">10</strong></div>
+            <div class="stage-info" id="stage-name">Stage 1</div>
+        </div>
 
-  <label>Defensive Points</label>
-  <input id="points" type="number">
+        <div class="scoreboard" id="scoreboard"></div>
 
-  <label>Month</label>
-  <select id="month">
-    <option>January</option>
-    <option>February</option>
-    <option>March</option>
-    <option>April</option>
-    <option>May</option>
-    <option>June</option>
-    <option>July</option>
-    <option>August</option>
-    <option>September</option>
-    <option>October</option>
-    <option>November</option>
-    <option>December</option>
-  </select>
+        <div class="dart-slots" id="dart-container">
+            <div class="dart-circle" id="dart-0">1</div>
+            <div class="dart-circle" id="dart-1">2</div>
+            <div class="dart-circle" id="dart-2">3</div>
+        </div>
 
-  <label>Day</label>
-  <input id="day" type="number" min="1" max="31">
+        <div class="keypad">
+            <button class="btn-mod" onclick="setModifier(1)">Single</button>
+            <button class="btn-mod" onclick="setModifier(2)">Double</button>
+            <button class="btn-mod" onclick="setModifier(3)">Triple</button>
+            <button class="btn-special" onclick="inputScore(25, 2)">D-Bull</button>
+            
+            <div id="num-buttons" style="display: contents;"></div>
 
-  <button onclick="submitPoints()">Submit</button>
+            <button class="btn-special" onclick="inputScore(25, 1)">25</button>
+            <button class="btn-special" onclick="inputScore(100, 1)">100</button>
+            <button class="btn-miss" onclick="inputScore(0, 0)">MISS</button>
+            <button class="btn-undo" onclick="undoLast()">UNDO</button>
+        </div>
+    </div>
 
-  <p id="status"></p>
+    <div id="winner-banner">
+        <h1 style="margin:0">🏆 CHALLENGE COMPLETE 🏆</h1>
+        <h2 id="winner-name"></h2>
+        <div id="final-stats"></div>
+        <button class="btn-main" style="margin-top:20px; background:white; color:var(--primary)" onclick="location.reload()">Play Again</button>
+    </div>
+</div>
 
 <script>
-const SCRIPT_URL = "YOUR_WEBAPP_URL_HERE";
+    let players = [];
+    let currentPlayerIdx = 0;
+    let currentStage = 1;
+    let stageTargetIdx = 0; 
+    let currentModifier = 1;
+    let turnDarts = [];
+    let history = [];
 
-function submitPoints() {
-  const payload = {
-    player: document.getElementById("player").value,
-    points: document.getElementById("points").value,
-    month: document.getElementById("month").value,
-    day: document.getElementById("day").value
-  };
+    const STAGE1_TARGETS = [10, 11, 12, 13, 14, 15];
+    const STAGE2_TARGETS = Array.from({length: 20}, (_, i) => i + 1).concat([25]); 
+    const STAGE3_TARGETS = [15, 16, 17, 18, 19, 20];
 
-  fetch(SCRIPT_URL, {
-    method: "POST",
-    body: JSON.stringify(payload),
-    headers: { "Content-Type": "application/json" }
-  })
-  .then(r => r.json())
-  .then(res => {
-    if (res.success) {
-      document.getElementById("status").innerText = "Points added!";
-    } else {
-      document.getElementById("status").innerText = "Error: " + res.error;
+    function startGame() {
+        const input = document.getElementById('player-input').value;
+        const names = input.split('\n').filter(n => n.trim() !== "");
+        if (names.length === 0) return alert("Please enter player names");
+
+        players = names.map(name => ({ name, score: 0 }));
+        document.getElementById('setup-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        
+        generateNumButtons();
+        updateUI();
     }
-  });
-}
-</script>
 
+    function generateNumButtons() {
+        const container = document.getElementById('num-buttons');
+        for (let i = 1; i <= 20; i++) {
+            const btn = document.createElement('button');
+            btn.innerText = i;
+            btn.onclick = () => inputScore(i, currentModifier);
+            container.appendChild(btn);
+        }
+    }
+
+    function setModifier(m) {
+        currentModifier = m;
+    }
+
+    function inputScore(val, mod) {
+        const target = getCurrentTarget();
+        let points = 0;
+
+        if (currentStage === 1 || currentStage === 3) {
+            if (val === target) points = val * mod;
+        } else if (currentStage === 2) {
+            // Stage 2: Only Doubles of the specific target count
+            if (val === target && mod === 2) {
+                points = (val === 25) ? 100 : 50;
+            }
+        }
+
+        turnDarts.push({ val, mod, points });
+        currentModifier = 1; 
+        updateUI();
+
+        const maxDarts = (currentStage === 2) ? 1 : 3;
+        if (turnDarts.length >= maxDarts) {
+            setTimeout(nextTurn, 400);
+        }
+    }
+
+    function nextTurn() {
+        let roundTotal = turnDarts.reduce((a, b) => a + b.points, 0);
+        
+        // Shanghai Bonus Logic
+        if (currentStage !== 2) {
+            const mods = turnDarts.map(d => d.mod);
+            const vals = turnDarts.map(d => d.val);
+            const target = getCurrentTarget();
+            if (vals.every(v => v === target) && mods.includes(1) && mods.includes(2) && mods.includes(3)) {
+                roundTotal += 100;
+            }
+        }
+
+        players[currentPlayerIdx].score += roundTotal;
+        
+        // Save history for undo
+        history.push({ 
+            playerIdx: currentPlayerIdx, 
+            stage: currentStage, 
+            targetIdx: stageTargetIdx, 
+            added: roundTotal 
+        });
+
+        turnDarts = [];
+        
+        // PROGRESSION LOGIC
+        currentPlayerIdx++;
+        
+        // If all players have thrown at the current target
+        if (currentPlayerIdx >= players.length) {
+            currentPlayerIdx = 0;
+            stageTargetIdx++;
+            
+            // Check if stage is finished
+            const currentTargetArray = currentStage === 1 ? STAGE1_TARGETS : (currentStage === 2 ? STAGE2_TARGETS : STAGE3_TARGETS);
+            
+            if (stageTargetIdx >= currentTargetArray.length) {
+                stageTargetIdx = 0;
+                currentStage++;
+                if (currentStage > 3) {
+                    showWinner();
+                    return;
+                }
+            }
+        }
+
+        updateUI();
+    }
+
+    function getCurrentTarget() {
+        if (currentStage === 1) return STAGE1_TARGETS[stageTargetIdx];
+        if (currentStage === 2) return STAGE2_TARGETS[stageTargetIdx];
+        return STAGE3_TARGETS[stageTargetIdx];
+    }
+
+    function updateUI() {
+        document.getElementById('stage-name').innerText = `Stage ${currentStage}`;
+        const target = getCurrentTarget();
+        
+        // UI Text for Stage 2 targets
+        if (currentStage === 2) {
+            document.getElementById('target-val').innerText = (target === 25) ? "Double Bull" : `Double ${target}`;
+            document.getElementById('dart-container').style.visibility = 'hidden'; // Hide darts in Stage 2 (1 dart only)
+        } else {
+            document.getElementById('target-val').innerText = target;
+            document.getElementById('dart-container').style.visibility = 'visible';
+        }
+
+        const sb = document.getElementById('scoreboard');
+        sb.innerHTML = '';
+        players.forEach((p, i) => {
+            const div = document.createElement('div');
+            div.className = `player-pill ${i === currentPlayerIdx ? 'active' : ''}`;
+            div.innerHTML = `<small>${p.name}</small><br><strong>${p.score}</strong>`;
+            sb.appendChild(div);
+        });
+
+        for (let i = 0; i < 3; i++) {
+            const slot = document.getElementById(`dart-${i}`);
+            if (turnDarts[i]) {
+                const m = turnDarts[i].mod === 2 ? 'D' : turnDarts[i].mod === 3 ? 'T' : 'S';
+                slot.innerText = m + (turnDarts[i].val === 25 ? 'B' : turnDarts[i].val);
+                slot.classList.add('filled');
+            } else {
+                slot.innerText = i + 1;
+                slot.classList.remove('filled');
+            }
+        }
+    }
+
+    function undoLast() {
+        if (turnDarts.length > 0) {
+            turnDarts.pop();
+            updateUI();
+            return;
+        }
+        if (history.length === 0) return;
+
+        const last = history.pop();
+        players[last.playerIdx].score -= last.added;
+        currentPlayerIdx = last.playerIdx;
+        currentStage = last.stage;
+        stageTargetIdx = last.targetIdx;
+        updateUI();
+    }
+
+    function showWinner() {
+        const sorted = [...players].sort((a,b) => b.score - a.score);
+        document.getElementById('winner-name').innerText = `${sorted[0].name} Wins!`;
+        document.getElementById('final-stats').innerHTML = sorted.map(p => `<p>${p.name}: ${p.score} pts</p>`).join('');
+        document.getElementById('winner-banner').style.display = 'block';
+    }
+</script>
 </body>
 </html>
