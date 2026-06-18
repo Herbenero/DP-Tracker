@@ -16,9 +16,8 @@
         .container { width: 95%; max-width: 600px; padding: 20px; }
         .card { background: var(--secondary); padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); text-align: center; }
         
-        #setup-screen input { padding: 12px; border-radius: 6px; border: none; width: 70%; margin-bottom: 10px; }
-        button { padding: 12px 20px; cursor: pointer; border-radius: 6px; border: none; font-weight: bold; transition: 0.2s; }
-        .btn-main { background: var(--primary); color: white; }
+        button { padding: 12px; cursor: pointer; border-radius: 6px; border: none; font-weight: bold; transition: 0.2s; }
+        .btn-main { background: var(--primary); color: white; width: 100%; font-size: 1.1rem; }
         
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #444; padding-bottom: 10px; }
         .stage-info { color: var(--accent); font-weight: bold; font-size: 1.2rem; }
@@ -27,8 +26,9 @@
         .player-pill.active { border-color: var(--primary); background: #1e272e; transform: scale(1.05); }
 
         .dart-slots { display: flex; justify-content: center; gap: 10px; margin: 20px 0; }
-        .dart-circle { width: 50px; height: 50px; border-radius: 50%; border: 2px dashed #777; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .dart-circle { width: 50px; height: 50px; border-radius: 50%; border: 2px dashed #777; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem; }
         .dart-circle.filled { border-style: solid; border-color: var(--primary); background: rgba(39, 174, 96, 0.2); }
+        .dart-target { font-size: 0.6rem; color: #aaa; }
 
         .keypad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
         .keypad button { background: #546e7a; color: white; font-size: 1rem; }
@@ -47,22 +47,22 @@
     <div id="setup-screen" class="card">
         <h1>JDC Challenge</h1>
         <p>Enter Player Names (one per line):</p>
-        <textarea id="player-input" rows="5" style="width:100%; margin-bottom:15px; border-radius:8px; padding:10px; background:#34495e; color:white; border:none;" placeholder="John&#10;Jane"></textarea>
-        <button class="btn-main" onclick="startGame()">Start Game</button>
+        <textarea id="player-input" rows="5" style="width:100%; margin-bottom:15px; border-radius:8px; padding:10px; background:#34495e; color:white; border:none;" placeholder="Player 1&#10;Player 2"></textarea>
+        <button class="btn-main" onclick="startGame()">Start Challenge</button>
     </div>
 
     <div id="game-screen" class="card hidden">
         <div class="header">
-            <div id="current-target" style="font-size: 1.4rem;">Target: <strong id="target-val" style="color:var(--accent)">10</strong></div>
+            <div id="current-target" style="font-size: 1.2rem;">Stage Target: <strong id="target-val" style="color:var(--accent)">10</strong></div>
             <div class="stage-info" id="stage-name">Stage 1</div>
         </div>
 
         <div class="scoreboard" id="scoreboard"></div>
 
-        <div class="dart-slots" id="dart-container">
-            <div class="dart-circle" id="dart-0">1</div>
-            <div class="dart-circle" id="dart-1">2</div>
-            <div class="dart-circle" id="dart-2">3</div>
+        <div class="dart-slots">
+            <div class="dart-circle" id="dart-0"><span class="dart-target" id="t-0">Dart 1</span><span id="v-0">-</span></div>
+            <div class="dart-circle" id="dart-1"><span class="dart-target" id="t-1">Dart 2</span><span id="v-1">-</span></div>
+            <div class="dart-circle" id="dart-2"><span class="dart-target" id="t-2">Dart 3</span><span id="v-2">-</span></div>
         </div>
 
         <div class="keypad">
@@ -81,10 +81,10 @@
     </div>
 
     <div id="winner-banner">
-        <h1 style="margin:0">🏆 CHALLENGE COMPLETE 🏆</h1>
+        <h1 style="margin:0">🏆 FINAL RESULTS 🏆</h1>
         <h2 id="winner-name"></h2>
         <div id="final-stats"></div>
-        <button class="btn-main" style="margin-top:20px; background:white; color:var(--primary)" onclick="location.reload()">Play Again</button>
+        <button class="btn-main" style="margin-top:20px; background:white; color:var(--primary)" onclick="location.reload()">New Game</button>
     </div>
 </div>
 
@@ -92,13 +92,13 @@
     let players = [];
     let currentPlayerIdx = 0;
     let currentStage = 1;
-    let stageTargetIdx = 0; 
+    let stageTargetIdx = 0; // Tracks which set of targets we are on
     let currentModifier = 1;
     let turnDarts = [];
     let history = [];
 
     const STAGE1_TARGETS = [10, 11, 12, 13, 14, 15];
-    const STAGE2_TARGETS = Array.from({length: 20}, (_, i) => i + 1).concat([25]); 
+    const STAGE2_TARGETS = Array.from({length: 20}, (_, i) => i + 1).concat([25]); // 1-20 + Bull
     const STAGE3_TARGETS = [15, 16, 17, 18, 19, 20];
 
     function startGame() {
@@ -106,7 +106,7 @@
         const names = input.split('\n').filter(n => n.trim() !== "");
         if (names.length === 0) return alert("Please enter player names");
 
-        players = names.map(name => ({ name, score: 0 }));
+        players = names.map(name => ({ name, score: 0, s2Idx: 0 }));
         document.getElementById('setup-screen').classList.add('hidden');
         document.getElementById('game-screen').classList.remove('hidden');
         
@@ -128,97 +128,103 @@
         currentModifier = m;
     }
 
-    function inputScore(val, mod) {
-        const target = getCurrentTarget();
-        let points = 0;
+    function getDartTarget(dartNum) {
+        if (currentStage === 1) return STAGE1_TARGETS[stageTargetIdx];
+        if (currentStage === 3) return STAGE3_TARGETS[stageTargetIdx];
+        
+        // Stage 2: Specific target per dart for the current player
+        const player = players[currentPlayerIdx];
+        const targetIdx = player.s2Idx + dartNum;
+        return (targetIdx < STAGE2_TARGETS.length) ? STAGE2_TARGETS[targetIdx] : null;
+    }
 
-        if (currentStage === 1 || currentStage === 3) {
-            if (val === target) points = val * mod;
-        } else if (currentStage === 2) {
-            // Stage 2: Only Doubles of the specific target count
+    function inputScore(val, mod) {
+        const target = getDartTarget(turnDarts.length);
+        if (target === null) return; // Should not happen
+
+        let points = 0;
+        if (currentStage === 2) {
             if (val === target && mod === 2) {
                 points = (val === 25) ? 100 : 50;
             }
+        } else {
+            if (val === target) points = val * mod;
         }
 
-        turnDarts.push({ val, mod, points });
+        turnDarts.push({ val, mod, points, targetUsed: target });
         currentModifier = 1; 
         updateUI();
 
-        const maxDarts = (currentStage === 2) ? 1 : 3;
-        if (turnDarts.length >= maxDarts) {
+        if (turnDarts.length >= 3 || (currentStage === 2 && (players[currentPlayerIdx].s2Idx + turnDarts.length >= STAGE2_TARGETS.length))) {
             setTimeout(nextTurn, 400);
         }
     }
 
     function nextTurn() {
         let roundTotal = turnDarts.reduce((a, b) => a + b.points, 0);
+        const player = players[currentPlayerIdx];
         
-        // Shanghai Bonus Logic
+        // Shanghai Bonus (Stage 1 & 3)
         if (currentStage !== 2) {
             const mods = turnDarts.map(d => d.mod);
             const vals = turnDarts.map(d => d.val);
-            const target = getCurrentTarget();
+            const target = STAGE1_TARGETS[stageTargetIdx] || STAGE3_TARGETS[stageTargetIdx];
             if (vals.every(v => v === target) && mods.includes(1) && mods.includes(2) && mods.includes(3)) {
                 roundTotal += 100;
             }
         }
 
-        players[currentPlayerIdx].score += roundTotal;
-        
-        // Save history for undo
+        player.score += roundTotal;
+        const prevS2Idx = player.s2Idx;
+        if (currentStage === 2) player.s2Idx += turnDarts.length;
+
         history.push({ 
             playerIdx: currentPlayerIdx, 
             stage: currentStage, 
             targetIdx: stageTargetIdx, 
-            added: roundTotal 
+            added: roundTotal,
+            s2IdxIncrement: turnDarts.length
         });
 
         turnDarts = [];
-        
-        // PROGRESSION LOGIC
         currentPlayerIdx++;
         
-        // If all players have thrown at the current target
+        // Check if visit rotation is complete
         if (currentPlayerIdx >= players.length) {
             currentPlayerIdx = 0;
-            stageTargetIdx++;
             
-            // Check if stage is finished
-            const currentTargetArray = currentStage === 1 ? STAGE1_TARGETS : (currentStage === 2 ? STAGE2_TARGETS : STAGE3_TARGETS);
-            
-            if (stageTargetIdx >= currentTargetArray.length) {
-                stageTargetIdx = 0;
-                currentStage++;
-                if (currentStage > 3) {
-                    showWinner();
-                    return;
+            if (currentStage !== 2) {
+                stageTargetIdx++;
+                const max = currentStage === 1 ? STAGE1_TARGETS.length : STAGE3_TARGETS.length;
+                if (stageTargetIdx >= max) {
+                    currentStage++;
+                    stageTargetIdx = 0;
+                }
+            } else {
+                // In Stage 2, move to Stage 3 only when the last player finishes the Bull
+                if (players[players.length - 1].s2Idx >= STAGE2_TARGETS.length) {
+                    currentStage = 3;
+                    stageTargetIdx = 0;
                 }
             }
         }
 
-        updateUI();
-    }
-
-    function getCurrentTarget() {
-        if (currentStage === 1) return STAGE1_TARGETS[stageTargetIdx];
-        if (currentStage === 2) return STAGE2_TARGETS[stageTargetIdx];
-        return STAGE3_TARGETS[stageTargetIdx];
+        if (currentStage > 3) showWinner();
+        else updateUI();
     }
 
     function updateUI() {
         document.getElementById('stage-name').innerText = `Stage ${currentStage}`;
-        const target = getCurrentTarget();
         
-        // UI Text for Stage 2 targets
+        // Header Target Display
+        const targetValEl = document.getElementById('target-val');
         if (currentStage === 2) {
-            document.getElementById('target-val').innerText = (target === 25) ? "Double Bull" : `Double ${target}`;
-            document.getElementById('dart-container').style.visibility = 'hidden'; // Hide darts in Stage 2 (1 dart only)
+            targetValEl.innerText = "Around the World Doubles";
         } else {
-            document.getElementById('target-val').innerText = target;
-            document.getElementById('dart-container').style.visibility = 'visible';
+            targetValEl.innerText = (currentStage === 1 ? STAGE1_TARGETS[stageTargetIdx] : STAGE3_TARGETS[stageTargetIdx]);
         }
 
+        // Scoreboard
         const sb = document.getElementById('scoreboard');
         sb.innerHTML = '';
         players.forEach((p, i) => {
@@ -228,15 +234,26 @@
             sb.appendChild(div);
         });
 
+        // Dart Target Labels and Values
         for (let i = 0; i < 3; i++) {
+            const target = getDartTarget(i);
+            const targetLabel = document.getElementById(`t-${i}`);
+            const valLabel = document.getElementById(`v-${i}`);
             const slot = document.getElementById(`dart-${i}`);
-            if (turnDarts[i]) {
-                const m = turnDarts[i].mod === 2 ? 'D' : turnDarts[i].mod === 3 ? 'T' : 'S';
-                slot.innerText = m + (turnDarts[i].val === 25 ? 'B' : turnDarts[i].val);
-                slot.classList.add('filled');
+
+            if (target) {
+                targetLabel.innerText = (currentStage === 2) ? `D${target === 25 ? 'Bull' : target}` : `Dart ${i+1}`;
+                if (turnDarts[i]) {
+                    const m = turnDarts[i].mod === 2 ? 'D' : turnDarts[i].mod === 3 ? 'T' : 'S';
+                    valLabel.innerText = m + (turnDarts[i].val === 25 ? 'B' : turnDarts[i].val);
+                    slot.classList.add('filled');
+                } else {
+                    valLabel.innerText = "-";
+                    slot.classList.remove('filled');
+                }
+                slot.style.opacity = "1";
             } else {
-                slot.innerText = i + 1;
-                slot.classList.remove('filled');
+                slot.style.opacity = "0"; // Hide slot if no target (end of stage 2)
             }
         }
     }
@@ -251,6 +268,8 @@
 
         const last = history.pop();
         players[last.playerIdx].score -= last.added;
+        if (last.stage === 2) players[last.playerIdx].s2Idx -= last.s2IdxIncrement;
+        
         currentPlayerIdx = last.playerIdx;
         currentStage = last.stage;
         stageTargetIdx = last.targetIdx;
