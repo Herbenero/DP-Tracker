@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bowling Darts</title>
-  <meta name="description" content="Bowling Darts web app with scoreboard, history, and leaderboard." />
+  <meta name="description" content="Bowling Darts web app with multi-player support, history, and leaderboard." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -175,12 +175,6 @@
       max-width:8ch;
     }
 
-    .hero-copy p{
-      margin:0;
-      color:var(--muted);
-      max-width:50ch;
-    }
-
     .rules{
       display:grid;
       gap:12px;
@@ -224,8 +218,7 @@
       content:"";
       position:absolute;
       inset:0;
-      background:
-        repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 2px, transparent 2px 72px);
+      background:repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 2px, transparent 2px 72px);
       opacity:.4;
     }
 
@@ -318,14 +311,6 @@
       font-weight:700;
     }
 
-    .grid-2, .grid-3{
-      display:grid;
-      gap:14px;
-    }
-
-    .grid-2{grid-template-columns:1fr 1fr}
-    .grid-3{grid-template-columns:repeat(3,1fr)}
-
     .field label{
       display:block;
       margin-bottom:8px;
@@ -352,6 +337,29 @@
       border-color:rgba(88,208,255,.45);
       box-shadow:0 0 0 4px rgba(88,208,255,.10);
       transform:translateY(-1px);
+    }
+
+    .player-list{
+      display:grid;
+      gap:12px;
+      margin-top:14px;
+    }
+
+    .player-row{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:10px;
+      align-items:end;
+    }
+
+    .player-row .remove-player{
+      min-width:48px;
+      min-height:52px;
+      border-radius:16px;
+      background:linear-gradient(135deg, #8f3434, #b94a4a);
+      border:1px solid rgba(255,255,255,.10);
+      color:#fff;
+      font-weight:900;
     }
 
     .actions{
@@ -473,18 +481,6 @@
       margin-top:4px;
     }
 
-    .shot-btn::after{
-      content:"";
-      position:absolute;
-      inset:auto -15% -45% -15%;
-      height:100%;
-      background:radial-gradient(circle, rgba(255,255,255,.08), transparent 55%);
-      transition:transform .2s ease;
-      transform:translateY(24px);
-    }
-
-    .shot-btn:hover::after{transform:translateY(8px)}
-
     .numbers{
       display:grid;
       grid-template-columns:repeat(5,1fr);
@@ -546,7 +542,7 @@
 
     table{
       width:100%;
-      min-width:950px;
+      min-width:1100px;
       border-collapse:collapse;
     }
 
@@ -654,7 +650,7 @@
 
     .leader-item{
       display:grid;
-      grid-template-columns:1.35fr .7fr .7fr .7fr 1fr;
+      grid-template-columns:1.4fr .6fr .6fr .6fr 1fr;
       gap:10px;
       align-items:center;
     }
@@ -682,14 +678,15 @@
 
     @media (max-width:760px){
       .topbar{flex-direction:column;align-items:flex-start}
-      .grid-2,.grid-3,.meta-strip,.controls,.bottom-actions{grid-template-columns:1fr 1fr}
+      .meta-strip,.controls,.bottom-actions{grid-template-columns:1fr 1fr}
       .numbers{grid-template-columns:repeat(4,1fr)}
       .leader-item{grid-template-columns:1fr 1fr}
     }
 
     @media (max-width:560px){
-      .grid-2,.grid-3,.meta-strip,.controls,.bottom-actions{grid-template-columns:1fr}
+      .meta-strip,.controls,.bottom-actions{grid-template-columns:1fr}
       .numbers{grid-template-columns:repeat(3,1fr)}
+      .player-row{grid-template-columns:1fr}
     }
   </style>
 </head>
@@ -700,7 +697,7 @@
         <div class="mark">10</div>
         <div>
           <h1>Bowling Darts</h1>
-          <p>Select the alley with dart 1, then score pins with darts 2 and 3. Local history and leaderboard included.</p>
+          <p>Select the alley with dart 1, then score pins with darts 2 and 3. Supports multiple players, local history, and leaderboard.</p>
         </div>
       </div>
       <div class="top-actions">
@@ -729,17 +726,11 @@
             <div class="panel" style="background:rgba(0,0,0,.12)">
               <div class="panel-inner">
                 <h3 class="section-title">Start Match</h3>
-                <div class="grid-2" style="margin-top:14px">
-                  <div class="field">
-                    <label for="player1">Player 1</label>
-                    <input id="player1" type="text" maxlength="28" placeholder="Enter player name">
-                  </div>
-                  <div class="field">
-                    <label for="player2">Player 2</label>
-                    <input id="player2" type="text" maxlength="28" placeholder="Enter player name">
-                  </div>
-                </div>
+
+                <div class="player-list" id="playerList"></div>
+
                 <div class="actions">
+                  <button class="btn btn-alt" id="addPlayerBtn" type="button">Add Player</button>
                   <button class="btn btn-primary" id="startGameBtn">Start Game</button>
                 </div>
               </div>
@@ -852,8 +843,8 @@
 
   <script>
     const STORAGE_KEYS = {
-      history: "bowling_darts_history_v2",
-      leaderboard: "bowling_darts_leaderboard_v2"
+      history: "bowling_darts_history_v3",
+      leaderboard: "bowling_darts_leaderboard_v3"
     };
 
     const state = {
@@ -867,8 +858,8 @@
     };
 
     const el = {
-      player1: document.getElementById("player1"),
-      player2: document.getElementById("player2"),
+      playerList: document.getElementById("playerList"),
+      addPlayerBtn: document.getElementById("addPlayerBtn"),
       startGameBtn: document.getElementById("startGameBtn"),
       gameArea: document.getElementById("gameArea"),
       currentPlayerLabel: document.getElementById("currentPlayerLabel"),
@@ -932,11 +923,60 @@
       };
     }
 
-    function startGame() {
-      const p1 = el.player1.value.trim() || "Player 1";
-      const p2 = el.player2.value.trim() || "Player 2";
+    function addPlayerField(value = "") {
+      const count = el.playerList.querySelectorAll(".player-row").length + 1;
+      const row = document.createElement("div");
+      row.className = "player-row";
+      row.innerHTML = `
+        <div class="field">
+          <label>Player ${count}</label>
+          <input type="text" maxlength="28" placeholder="Enter player name" value="${value.replace(/"/g, "&quot;")}">
+        </div>
+        <button class="remove-player" type="button" aria-label="Remove player">×</button>
+      `;
+      const removeBtn = row.querySelector(".remove-player");
+      removeBtn.addEventListener("click", () => {
+        if (el.playerList.querySelectorAll(".player-row").length <= 2) return;
+        row.remove();
+        refreshPlayerLabels();
+      });
 
-      state.players = [createPlayer(p1), createPlayer(p2)];
+      const input = row.querySelector("input");
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") startGame();
+      });
+
+      el.playerList.appendChild(row);
+      refreshPlayerLabels();
+    }
+
+    function refreshPlayerLabels() {
+      [...el.playerList.querySelectorAll(".player-row")].forEach((row, idx) => {
+        const label = row.querySelector("label");
+        if (label) label.textContent = `Player ${idx + 1}`;
+      });
+
+      const rows = el.playerList.querySelectorAll(".player-row");
+      rows.forEach(row => {
+        const btn = row.querySelector(".remove-player");
+        btn.style.visibility = rows.length <= 2 ? "hidden" : "visible";
+      });
+    }
+
+    function getPlayerNames() {
+      return [...el.playerList.querySelectorAll("input")]
+        .map(input => input.value.trim())
+        .filter(Boolean);
+    }
+
+    function startGame() {
+      const names = getPlayerNames();
+      if (names.length < 2) {
+        setAnnouncement("Enter at least 2 player names to start.", "warn");
+        return;
+      }
+
+      state.players = names.map(name => createPlayer(name));
       state.currentPlayer = 0;
       state.frame = 0;
       state.dart = 1;
@@ -987,11 +1027,11 @@
     }
 
     function updateMeta() {
-      if (!state.started) return;
+      if (!state.started || !state.players.length) return;
       const player = currentPlayerObj();
       const frame = currentFrameObj();
       el.currentPlayerLabel.textContent = player.name;
-      el.frameLabel.textContent = `${state.frame + 1} / 10`;
+      el.frameLabel.textContent = `${Math.min(state.frame + 1, 10)} / 10`;
       el.dartLabel.textContent = `${state.dart} / 3`;
       el.modeLabel.textContent = state.dart === 1 ? "Select Alley" : "Score Pins";
       el.alleyLabel.textContent = frame.alley ?? "—";
@@ -1127,7 +1167,6 @@
         frame.bonus = 5;
         frame.total = 15;
       } else {
-        frame.mark = "";
         frame.total = raw;
       }
 
@@ -1135,8 +1174,10 @@
         frame.total = 18;
       }
 
-      if ((frame.shots[1] === "Outer Single" && frame.shots[2] === "Inner Single") ||
-          (frame.shots[1] === "Inner Single" && frame.shots[2] === "Outer Single")) {
+      if (
+        (frame.shots[1] === "Outer Single" && frame.shots[2] === "Inner Single") ||
+        (frame.shots[1] === "Inner Single" && frame.shots[2] === "Outer Single")
+      ) {
         frame.total = 15;
         frame.mark = "/";
         frame.bonus = 5;
@@ -1149,12 +1190,9 @@
       player.total = player.frames.reduce((sum, f) => sum + (f.total || 0), 0);
       frame.closed = true;
 
-      const wasStrike = frame.mark === "X";
-      const wasSpare = frame.mark === "/";
-
-      if (wasStrike) {
+      if (frame.mark === "X") {
         setAnnouncement(`${player.name} scores a strike frame for 10.`, "good");
-      } else if (wasSpare) {
+      } else if (frame.mark === "/") {
         setAnnouncement(`${player.name} scores a spare for 10 plus 5 bonus.`, "good");
       } else {
         setAnnouncement(`${player.name} scores ${frame.total} pins in the frame.`, "");
@@ -1164,11 +1202,9 @@
     }
 
     function advanceTurn() {
-      if (state.currentPlayer === state.players.length - 1) {
-        state.currentPlayer = 0;
+      state.currentPlayer = (state.currentPlayer + 1) % state.players.length;
+      if (state.currentPlayer === 0) {
         state.frame += 1;
-      } else {
-        state.currentPlayer += 1;
       }
 
       state.dart = 1;
@@ -1186,13 +1222,16 @@
       state.gameOver = true;
       renderBoard();
 
-      const p1 = state.players[0];
-      const p2 = state.players[1];
+      const sorted = [...state.players].sort((a, b) => b.total - a.total);
+      const topScore = sorted[0].total;
+      const winners = sorted.filter(p => p.total === topScore);
 
       let resultMessage = "";
-      if (p1.total > p2.total) resultMessage = `${p1.name} wins ${p1.total} to ${p2.total}.`;
-      else if (p2.total > p1.total) resultMessage = `${p2.name} wins ${p2.total} to ${p1.total}.`;
-      else resultMessage = `Tie game at ${p1.total}.`;
+      if (winners.length === 1) {
+        resultMessage = `${winners[0].name} wins with ${winners[0].total}.`;
+      } else {
+        resultMessage = `Tie game at ${topScore} between ${winners.map(w => w.name).join(", ")}.`;
+      }
 
       setAnnouncement(`Game over. ${resultMessage}`, "good");
       saveMatch();
@@ -1249,25 +1288,32 @@
       history.unshift(match);
       setStorage(STORAGE_KEYS.history, history);
 
-      const [a, b] = state.players;
-      if (!leaderboard[a.name]) leaderboard[a.name] = { name: a.name, wins: 0, losses: 0, ties: 0, games: 0, totalPins: 0 };
-      if (!leaderboard[b.name]) leaderboard[b.name] = { name: b.name, wins: 0, losses: 0, ties: 0, games: 0, totalPins: 0 };
+      const topScore = Math.max(...state.players.map(p => p.total));
+      const winners = state.players.filter(p => p.total === topScore).map(p => p.name);
 
-      leaderboard[a.name].games += 1;
-      leaderboard[b.name].games += 1;
-      leaderboard[a.name].totalPins += a.total;
-      leaderboard[b.name].totalPins += b.total;
+      state.players.forEach(player => {
+        if (!leaderboard[player.name]) {
+          leaderboard[player.name] = {
+            name: player.name,
+            wins: 0,
+            losses: 0,
+            ties: 0,
+            games: 0,
+            totalPins: 0
+          };
+        }
 
-      if (a.total > b.total) {
-        leaderboard[a.name].wins += 1;
-        leaderboard[b.name].losses += 1;
-      } else if (b.total > a.total) {
-        leaderboard[b.name].wins += 1;
-        leaderboard[a.name].losses += 1;
-      } else {
-        leaderboard[a.name].ties += 1;
-        leaderboard[b.name].ties += 1;
-      }
+        leaderboard[player.name].games += 1;
+        leaderboard[player.name].totalPins += player.total;
+
+        if (winners.length > 1 && winners.includes(player.name)) {
+          leaderboard[player.name].ties += 1;
+        } else if (winners.length === 1 && winners[0] === player.name) {
+          leaderboard[player.name].wins += 1;
+        } else {
+          leaderboard[player.name].losses += 1;
+        }
+      });
 
       setStorage(STORAGE_KEYS.leaderboard, leaderboard);
     }
@@ -1282,12 +1328,11 @@
       el.historyList.innerHTML = history.map(match => `
         <article class="history-item">
           <div class="history-top">
-            <strong>${match.players[0].name} vs ${match.players[1].name}</strong>
+            <strong>${match.players.map(p => p.name).join(" vs ")}</strong>
             <span class="pill">${match.date}</span>
           </div>
           <div class="muted" style="margin-top:8px">
-            ${match.players[0].name}: <strong>${match.players[0].total}</strong> &nbsp;•&nbsp;
-            ${match.players[1].name}: <strong>${match.players[1].total}</strong>
+            ${match.players.map(p => `${p.name}: <strong>${p.total}</strong>`).join(" &nbsp;•&nbsp; ")}
           </div>
         </article>
       `).join("");
@@ -1318,6 +1363,7 @@
       `).join("");
     }
 
+    el.addPlayerBtn.addEventListener("click", () => addPlayerField());
     el.startGameBtn.addEventListener("click", startGame);
     el.undoBtn.addEventListener("click", undo);
     el.newGameBtn.addEventListener("click", newGame);
@@ -1339,12 +1385,8 @@
       renderHistory();
     });
 
-    [el.player1, el.player2].forEach(input => {
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") startGame();
-      });
-    });
-
+    addPlayerField();
+    addPlayerField();
     renderHistory();
     renderLeaderboard();
 
