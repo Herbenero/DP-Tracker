@@ -3,40 +3,43 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bowling Darts</title>
-  <meta name="description" content="Bowling Darts web app with multi-player support, history, and leaderboard." />
+  <title>Golf Darts</title>
+  <meta name="description" content="Golf Darts scorekeeper with multiplayer support, history, leaderboard, and ELO." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;700&family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root{
-      --bg:#0d1117;
-      --bg-2:#121923;
-      --panel:#121a24cc;
-      --panel-solid:#151f2b;
-      --line:#2a3645;
-      --text:#eef4fb;
-      --muted:#98a9ba;
-      --accent:#ff6b35;
-      --accent-2:#58d0ff;
-      --good:#62d393;
-      --warn:#ff7f7f;
-      --gold:#f1c15d;
-      --shadow:0 24px 60px rgba(0,0,0,.35);
-      --radius:22px;
-      --max:1380px;
+      --bg:#eef4ea;
+      --bg-2:#e4eddc;
+      --panel:#f9fcf6cc;
+      --panel-solid:#f7fbf3;
+      --ink:#162015;
+      --muted:#63725f;
+      --line:#d2dfcb;
+      --green:#2d7b46;
+      --green-deep:#184f2b;
+      --sand:#d9b76b;
+      --sky:#78c3e6;
+      --warn:#b53f3f;
+      --good:#2f8d58;
+      --shadow:0 24px 60px rgba(35,59,28,.12);
+      --radius:24px;
+      --max:1420px;
     }
 
     *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
     body{
       margin:0;
-      font-family:"Manrope", sans-serif;
-      color:var(--text);
-      background:
-        radial-gradient(circle at 15% 15%, rgba(255,107,53,.10), transparent 24%),
-        radial-gradient(circle at 85% 12%, rgba(88,208,255,.10), transparent 22%),
-        linear-gradient(180deg, #0a0f14 0%, #101722 100%);
       min-height:100vh;
+      color:var(--ink);
+      font-family:"Inter", sans-serif;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(120,195,230,.18), transparent 22%),
+        radial-gradient(circle at 82% 12%, rgba(217,183,107,.18), transparent 18%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+      overflow-x:hidden;
     }
 
     body::before{
@@ -44,26 +47,27 @@
       position:fixed;
       inset:0;
       pointer-events:none;
-      opacity:.12;
+      opacity:.2;
       background:
-        repeating-linear-gradient(0deg, transparent 0 31px, rgba(255,255,255,.03) 31px 32px),
-        repeating-linear-gradient(90deg, transparent 0 31px, rgba(255,255,255,.025) 31px 32px);
-      mask-image:radial-gradient(circle at center, black 46%, transparent 92%);
+        linear-gradient(rgba(22,32,21,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(22,32,21,.03) 1px, transparent 1px);
+      background-size:28px 28px;
+      mask-image:radial-gradient(circle at center, black 48%, transparent 92%);
     }
 
-    .wrap{
+    .shell{
       width:min(var(--max), calc(100% - 24px));
       margin:0 auto;
-      padding:20px 0 40px;
+      padding:20px 0 42px;
     }
 
     .topbar{
       display:flex;
       justify-content:space-between;
       align-items:center;
-      gap:16px;
+      gap:18px;
       padding:8px 0 18px;
-      border-bottom:1px solid rgba(255,255,255,.08);
+      border-bottom:1px solid rgba(22,32,21,.08);
       margin-bottom:24px;
     }
 
@@ -73,42 +77,46 @@
       gap:14px;
     }
 
-    .mark{
-      width:58px;
-      height:58px;
+    .badge{
+      width:60px;
+      height:60px;
       border-radius:18px;
       display:grid;
       place-items:center;
       background:
-        radial-gradient(circle at 30% 30%, rgba(255,255,255,.18), transparent 22%),
-        linear-gradient(145deg, rgba(255,107,53,.22), rgba(88,208,255,.12)),
-        #0f1720;
-      border:1px solid rgba(255,255,255,.10);
+        radial-gradient(circle at 30% 28%, rgba(255,255,255,.75), transparent 24%),
+        linear-gradient(145deg, rgba(45,123,70,.18), rgba(120,195,230,.14)),
+        var(--panel-solid);
+      border:1px solid rgba(22,32,21,.08);
       box-shadow:var(--shadow);
-      font-family:"Oswald", sans-serif;
-      font-size:1.5rem;
-      letter-spacing:.06em;
-      color:var(--gold);
+      position:relative;
+      overflow:hidden;
     }
 
-    .brand h1{
+    .badge::before{
+      content:"⛳";
+      font-size:1.7rem;
+      transform:translateY(1px);
+    }
+
+    .brand-copy h1{
       margin:0;
-      font-family:"Oswald", sans-serif;
-      font-size:clamp(2.2rem, 5vw, 4rem);
+      font-family:"Anton", sans-serif;
+      font-size:clamp(2.4rem, 5vw, 4.5rem);
+      line-height:.92;
       letter-spacing:.04em;
-      line-height:.9;
-      font-weight:700;
+      font-weight:400;
       text-transform:uppercase;
     }
 
-    .brand p{
-      margin:4px 0 0;
+    .brand-copy p{
+      margin:5px 0 0;
       color:var(--muted);
-      max-width:52ch;
-      font-size:.95rem;
+      max-width:58ch;
+      font-size:.96rem;
     }
 
-    .top-actions{
+    .header-actions{
       display:flex;
       gap:10px;
       flex-wrap:wrap;
@@ -116,18 +124,18 @@
 
     .layout{
       display:grid;
-      grid-template-columns:1.08fr .92fr;
+      grid-template-columns:1.06fr .94fr;
       gap:22px;
       align-items:start;
     }
 
     .panel{
-      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.025));
-      border:1px solid rgba(255,255,255,.09);
+      background:linear-gradient(180deg, rgba(255,255,255,.58), rgba(255,255,255,.4));
+      border:1px solid rgba(22,32,21,.08);
       border-radius:var(--radius);
-      overflow:hidden;
       box-shadow:var(--shadow);
-      backdrop-filter: blur(12px);
+      backdrop-filter:blur(12px);
+      overflow:hidden;
     }
 
     .panel-inner{padding:22px}
@@ -135,25 +143,25 @@
 
     .hero{
       display:grid;
-      grid-template-columns:1.1fr .9fr;
-      min-height:460px;
+      grid-template-columns:1.08fr .92fr;
+      min-height:470px;
     }
 
     .hero-copy{
-      padding:26px;
+      padding:28px;
       display:flex;
       flex-direction:column;
       justify-content:space-between;
-      gap:18px;
+      gap:20px;
     }
 
     .eyebrow{
       display:inline-flex;
       align-items:center;
       gap:8px;
-      color:var(--accent-2);
+      color:var(--green);
       text-transform:uppercase;
-      letter-spacing:.16em;
+      letter-spacing:.14em;
       font-size:.78rem;
       font-weight:800;
     }
@@ -167,15 +175,23 @@
 
     .hero-copy h2{
       margin:0;
-      font-family:"Oswald", sans-serif;
-      font-size:clamp(3rem, 7vw, 6rem);
+      font-family:"Anton", sans-serif;
+      font-size:clamp(3.1rem, 7vw, 6.3rem);
       line-height:.9;
       letter-spacing:.04em;
       text-transform:uppercase;
       max-width:8ch;
+      font-weight:400;
     }
 
-    .rules{
+    .hero-copy p{
+      margin:0;
+      color:var(--muted);
+      max-width:52ch;
+      font-size:1rem;
+    }
+
+    .rule-stack{
       display:grid;
       gap:12px;
     }
@@ -183,125 +199,89 @@
     .rule{
       padding:14px 16px;
       border-radius:16px;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(255,255,255,.03);
+      border:1px solid rgba(22,32,21,.08);
+      background:rgba(255,255,255,.4);
       color:var(--muted);
     }
 
-    .rule strong{color:var(--text)}
+    .rule strong{color:var(--ink)}
 
-    .hero-art{
+    .hero-visual{
       position:relative;
       min-height:100%;
-      border-left:1px solid rgba(255,255,255,.08);
+      border-left:1px solid rgba(22,32,21,.08);
       background:
-        radial-gradient(circle at 30% 30%, rgba(255,107,53,.16), transparent 22%),
-        radial-gradient(circle at 65% 65%, rgba(88,208,255,.16), transparent 22%),
-        linear-gradient(180deg, rgba(255,255,255,.03), transparent 60%);
+        radial-gradient(circle at 25% 24%, rgba(120,195,230,.18), transparent 22%),
+        radial-gradient(circle at 78% 62%, rgba(217,183,107,.18), transparent 24%),
+        linear-gradient(180deg, rgba(255,255,255,.14), transparent 55%);
       overflow:hidden;
     }
 
-    .lane{
+    .course{
       position:absolute;
       inset:24px;
       border-radius:28px;
       background:
-        linear-gradient(180deg, #3b2718 0%, #8a5b35 10%, #b87a44 22%, #9d683d 72%, #5b3b22 100%);
+        radial-gradient(circle at 70% 22%, #f0d694 0 8%, transparent 8.5%),
+        radial-gradient(circle at 72% 24%, rgba(0,0,0,.08), transparent 18%),
+        radial-gradient(circle at 28% 72%, #f0d694 0 10%, transparent 10.5%),
+        linear-gradient(180deg, #8ccf72 0%, #5baa56 38%, #4e9a47 100%);
       box-shadow:
-        inset 0 0 0 2px rgba(255,255,255,.06),
-        inset 0 0 50px rgba(0,0,0,.18),
-        0 30px 70px rgba(0,0,0,.28);
+        inset 0 0 0 2px rgba(255,255,255,.16),
+        inset 0 0 80px rgba(0,0,0,.08),
+        0 30px 70px rgba(32,52,27,.16);
       overflow:hidden;
     }
 
-    .lane::before{
+    .course::before{
       content:"";
       position:absolute;
       inset:0;
-      background:repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 2px, transparent 2px 72px);
-      opacity:.4;
+      background:
+        radial-gradient(circle at 62% 18%, #15351d 0 1.1%, transparent 1.3%),
+        linear-gradient(135deg, transparent 0 36%, rgba(255,255,255,.16) 36% 38%, transparent 38%),
+        radial-gradient(circle at 18% 18%, rgba(255,255,255,.18), transparent 20%),
+        radial-gradient(circle at 84% 82%, rgba(255,255,255,.15), transparent 18%);
+      opacity:.95;
     }
 
-    .pins{
+    .flag{
       position:absolute;
-      top:28px;
-      left:50%;
-      transform:translateX(-50%);
-      width:160px;
-      height:120px;
+      right:24%;
+      top:16%;
+      width:4px;
+      height:110px;
+      background:#f7f4ea;
+      box-shadow:0 6px 18px rgba(0,0,0,.15);
     }
 
-    .pin{
-      position:absolute;
-      width:26px;
-      height:44px;
-      background:linear-gradient(180deg, #f7f7f7, #d8d8d8);
-      border-radius:14px 14px 10px 10px;
-      box-shadow:0 8px 16px rgba(0,0,0,.18);
-    }
-
-    .pin::before{
+    .flag::before{
       content:"";
       position:absolute;
-      top:10px;
-      left:0;
-      right:0;
-      height:7px;
-      background:#d63f33;
+      top:0;
+      left:4px;
+      width:44px;
+      height:26px;
+      background:linear-gradient(135deg, #f24c4c, #c42f2f);
+      clip-path:polygon(0 0, 100% 18%, 82% 100%, 0 100%);
     }
 
-    .pin:nth-child(1){left:67px; top:0}
-    .pin:nth-child(2){left:45px; top:28px}
-    .pin:nth-child(3){left:89px; top:28px}
-    .pin:nth-child(4){left:23px; top:56px}
-    .pin:nth-child(5){left:67px; top:56px}
-    .pin:nth-child(6){left:111px; top:56px}
-    .pin:nth-child(7){left:1px; top:84px}
-    .pin:nth-child(8){left:45px; top:84px}
-    .pin:nth-child(9){left:89px; top:84px}
-    .pin:nth-child(10){left:133px; top:84px}
-
-    .dart{
+    .ring{
       position:absolute;
-      width:150px;
-      height:10px;
-      background:linear-gradient(90deg, #5a3317, #c8914f 52%, #d9d9d9 53%, #8e8e8e 72%, #575757 100%);
-      border-radius:999px;
-      box-shadow:0 10px 20px rgba(0,0,0,.18);
+      border-radius:50%;
+      border:1px dashed rgba(255,255,255,.3);
     }
 
-    .dart::before{
-      content:"";
-      position:absolute;
-      left:-18px;
-      top:50%;
-      transform:translateY(-50%);
-      width:16px;
-      height:24px;
-      background:linear-gradient(180deg, rgba(255,107,53,.85), rgba(88,208,255,.8));
-      clip-path:polygon(100% 50%, 0 0, 0 100%);
-    }
-
-    .dart::after{
-      content:"";
-      position:absolute;
-      right:-12px;
-      top:50%;
-      transform:translateY(-50%);
-      border-left:16px solid #555;
-      border-top:6px solid transparent;
-      border-bottom:6px solid transparent;
-    }
-
-    .dart.d1{left:18%; top:58%; transform:rotate(-14deg)}
-    .dart.d2{left:42%; top:40%; transform:rotate(18deg)}
-    .dart.d3{left:54%; top:72%; transform:rotate(-4deg)}
+    .ring.r1{width:210px;height:210px;left:10%;bottom:10%}
+    .ring.r2{width:140px;height:140px;right:8%;bottom:14%}
+    .ring.r3{width:88px;height:88px;left:44%;top:18%}
 
     .section-title{
       margin:0;
-      font-family:"Oswald", sans-serif;
+      font-family:"Anton", sans-serif;
       font-size:2rem;
       letter-spacing:.05em;
+      font-weight:400;
       text-transform:uppercase;
     }
 
@@ -309,34 +289,6 @@
       color:var(--muted);
       font-size:.92rem;
       font-weight:700;
-    }
-
-    .field label{
-      display:block;
-      margin-bottom:8px;
-      color:var(--muted);
-      font-size:.82rem;
-      text-transform:uppercase;
-      letter-spacing:.12em;
-      font-weight:800;
-    }
-
-    .field input{
-      width:100%;
-      padding:15px 16px;
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,.11);
-      background:#0e1620;
-      color:var(--text);
-      font:inherit;
-      outline:none;
-      transition:.2s ease;
-    }
-
-    .field input:focus{
-      border-color:rgba(88,208,255,.45);
-      box-shadow:0 0 0 4px rgba(88,208,255,.10);
-      transform:translateY(-1px);
     }
 
     .player-list{
@@ -352,20 +304,57 @@
       align-items:end;
     }
 
-    .player-row .remove-player{
-      min-width:48px;
+    .field label{
+      display:block;
+      margin-bottom:8px;
+      color:var(--muted);
+      font-size:.82rem;
+      text-transform:uppercase;
+      letter-spacing:.12em;
+      font-weight:800;
+    }
+
+    .field input,
+    .field select{
+      width:100%;
+      padding:15px 16px;
+      border-radius:16px;
+      border:1px solid rgba(22,32,21,.1);
+      background:rgba(255,255,255,.75);
+      color:var(--ink);
+      font:inherit;
+      outline:none;
+      transition:.2s ease;
+    }
+
+    .field input:focus,
+    .field select:focus{
+      border-color:rgba(45,123,70,.35);
+      box-shadow:0 0 0 4px rgba(45,123,70,.12);
+      transform:translateY(-1px);
+    }
+
+    .remove-player{
+      min-width:50px;
       min-height:52px;
       border-radius:16px;
-      background:linear-gradient(135deg, #8f3434, #b94a4a);
-      border:1px solid rgba(255,255,255,.10);
-      color:#fff;
+      background:linear-gradient(135deg, #b53f3f, #d56060);
+      color:white;
+      border:1px solid rgba(22,32,21,.08);
       font-weight:900;
+    }
+
+    .setup-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+      margin-top:14px;
     }
 
     .actions{
       display:flex;
-      gap:12px;
       flex-wrap:wrap;
+      gap:12px;
       margin-top:18px;
     }
 
@@ -373,8 +362,7 @@
       border:0;
       cursor:pointer;
       font:inherit;
-      transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
-      color:var(--text);
+      transition:transform .18s ease, box-shadow .18s ease, background .18s ease, opacity .18s ease;
     }
 
     button:hover{transform:translateY(-2px)}
@@ -383,36 +371,37 @@
     .btn{
       padding:14px 18px;
       border-radius:16px;
-      background:rgba(255,255,255,.05);
-      border:1px solid rgba(255,255,255,.10);
+      border:1px solid rgba(22,32,21,.08);
+      background:rgba(255,255,255,.55);
+      color:var(--ink);
       font-weight:800;
     }
 
     .btn-primary{
-      background:linear-gradient(135deg, var(--accent), #ff8d55);
+      background:linear-gradient(135deg, var(--green), #3d9759);
       color:white;
-      box-shadow:0 14px 28px rgba(255,107,53,.18);
+      box-shadow:0 14px 28px rgba(45,123,70,.18);
     }
 
     .btn-alt{
-      background:linear-gradient(135deg, var(--accent-2), #79deff);
-      color:#06202b;
-      box-shadow:0 14px 28px rgba(88,208,255,.16);
-    }
-
-    .btn-good{
-      background:linear-gradient(135deg, #4dbf7b, #69d596);
-      color:#092012;
+      background:linear-gradient(135deg, var(--sky), #9ad6ef);
+      color:#113243;
+      box-shadow:0 14px 28px rgba(120,195,230,.18);
     }
 
     .btn-warn{
-      background:linear-gradient(135deg, #b44343, #df6565);
+      background:linear-gradient(135deg, #a53b3b, #c85656);
+      color:white;
+    }
+
+    .btn-good{
+      background:linear-gradient(135deg, #2f8d58, #47a96f);
       color:white;
     }
 
     .game-layout{
       display:grid;
-      grid-template-columns:1fr .95fr;
+      grid-template-columns:1fr .96fr;
       gap:22px;
       margin-top:22px;
     }
@@ -427,8 +416,8 @@
     .meta{
       padding:16px;
       border-radius:18px;
-      background:rgba(255,255,255,.04);
-      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.45);
+      border:1px solid rgba(22,32,21,.08);
     }
 
     .meta .k{
@@ -442,90 +431,165 @@
     }
 
     .meta .v{
-      font-family:"Oswald", sans-serif;
-      font-size:1.95rem;
+      font-family:"Anton", sans-serif;
+      font-size:2rem;
       line-height:1;
       letter-spacing:.04em;
+      font-weight:400;
       text-transform:uppercase;
     }
 
-    .controls{
+    .hole-pill{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:70px;
+      padding:8px 12px;
+      border-radius:999px;
+      background:linear-gradient(135deg, var(--sand), #e8cb8b);
+      color:#3d3010;
+      box-shadow:0 10px 22px rgba(217,183,107,.2);
+    }
+
+    .mult-row{
       display:grid;
       grid-template-columns:repeat(5,1fr);
       gap:12px;
       margin-bottom:18px;
     }
 
-    .shot-btn{
-      min-height:76px;
-      border-radius:20px;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)),
-        #101924;
-      border:1px solid rgba(255,255,255,.09);
-      box-shadow:0 10px 22px rgba(0,0,0,.16);
-      position:relative;
-      overflow:hidden;
-      font-family:"Oswald", sans-serif;
-      font-size:1.45rem;
-      letter-spacing:.04em;
+    .mult-btn{
+      padding:16px 12px;
+      border-radius:18px;
+      background:rgba(255,255,255,.5);
+      border:1px solid rgba(22,32,21,.08);
+      font-weight:900;
       text-transform:uppercase;
+      letter-spacing:.08em;
+      color:var(--ink);
     }
 
-    .shot-btn small{
-      display:block;
-      font-family:"Manrope", sans-serif;
-      font-size:.72rem;
-      letter-spacing:.12em;
-      opacity:.72;
-      margin-top:4px;
+    .mult-btn.active{
+      background:linear-gradient(135deg, rgba(45,123,70,.16), rgba(45,123,70,.06));
+      border-color:rgba(45,123,70,.35);
+      box-shadow:0 10px 22px rgba(45,123,70,.10);
     }
 
-    .numbers{
+    .target-grid{
       display:grid;
       grid-template-columns:repeat(5,1fr);
       gap:12px;
+      margin-bottom:18px;
     }
 
-    .num-btn{
-      min-height:68px;
-      border-radius:18px;
-      background:rgba(255,255,255,.04);
-      border:1px solid rgba(255,255,255,.09);
-      font-family:"Oswald", sans-serif;
-      font-size:1.8rem;
+    .target-btn{
+      min-height:76px;
+      border-radius:20px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,.42)),
+        var(--panel-solid);
+      border:1px solid rgba(22,32,21,.08);
+      box-shadow:0 10px 22px rgba(35,59,28,.08);
+      font-family:"Anton", sans-serif;
+      font-size:1.95rem;
       letter-spacing:.05em;
+      color:var(--ink);
+      position:relative;
+      overflow:hidden;
     }
 
-    .bottom-actions{
+    .target-btn::after{
+      content:"";
+      position:absolute;
+      inset:auto -15% -45% -15%;
+      height:100%;
+      background:radial-gradient(circle, rgba(45,123,70,.08), transparent 55%);
+      transform:translateY(24px);
+      transition:transform .2s ease;
+    }
+
+    .target-btn:hover::after{transform:translateY(10px)}
+
+    .target-btn.bull{
+      background:
+        linear-gradient(180deg, rgba(255,250,236,.82), rgba(255,255,255,.42)),
+        var(--panel-solid);
+      border-color:rgba(217,183,107,.35);
+      color:#6b531d;
+    }
+
+    .target-btn.current-hole{
+      outline:3px solid rgba(45,123,70,.25);
+      outline-offset:-3px;
+      background:
+        linear-gradient(180deg, rgba(220,245,227,.95), rgba(255,255,255,.5)),
+        var(--panel-solid);
+    }
+
+    .action-row{
       display:grid;
       grid-template-columns:repeat(3,1fr);
       gap:12px;
-      margin-top:18px;
+    }
+
+    .dart-track{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:12px;
+      margin-bottom:18px;
+    }
+
+    .dart-slot{
+      min-height:72px;
+      border-radius:18px;
+      border:1px solid rgba(22,32,21,.08);
+      background:rgba(255,255,255,.42);
+      display:grid;
+      place-items:center;
+      text-align:center;
+      padding:10px;
+    }
+
+    .dart-slot .n{
+      display:block;
+      color:var(--muted);
+      font-size:.78rem;
+      text-transform:uppercase;
+      letter-spacing:.12em;
+      font-weight:800;
+      margin-bottom:6px;
+    }
+
+    .dart-slot .v{
+      font-family:"Anton", sans-serif;
+      font-size:1.6rem;
+      line-height:1;
+      letter-spacing:.04em;
+      font-weight:400;
     }
 
     .announce{
       margin-top:18px;
-      min-height:58px;
+      min-height:60px;
       padding:16px 18px;
       border-radius:16px;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(255,255,255,.04);
+      border:1px solid rgba(22,32,21,.08);
+      background:rgba(255,255,255,.45);
       display:flex;
       align-items:center;
       font-weight:800;
     }
 
     .announce.good{
-      background:rgba(98,211,147,.10);
-      border-color:rgba(98,211,147,.20);
-      color:#dff8e9;
+      background:rgba(47,141,88,.10);
+      border-color:rgba(47,141,88,.20);
+      color:#20553a;
     }
 
     .announce.warn{
-      background:rgba(255,127,127,.10);
-      border-color:rgba(255,127,127,.20);
-      color:#ffe3e3;
+      background:rgba(181,63,63,.10);
+      border-color:rgba(181,63,63,.18);
+      color:#7c2c2c;
     }
 
     .score-head{
@@ -542,72 +606,55 @@
 
     table{
       width:100%;
-      min-width:1100px;
+      min-width:940px;
       border-collapse:collapse;
     }
 
     th, td{
       padding:10px 8px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-      border-right:1px solid rgba(255,255,255,.06);
+      border-bottom:1px solid rgba(22,32,21,.08);
+      border-right:1px solid rgba(22,32,21,.05);
       text-align:center;
       vertical-align:middle;
+      white-space:nowrap;
     }
 
     th:last-child, td:last-child{border-right:0}
     th{
+      background:rgba(255,255,255,.46);
+      color:var(--muted);
       font-size:.78rem;
       text-transform:uppercase;
       letter-spacing:.12em;
-      color:var(--muted);
       font-weight:800;
-      background:rgba(255,255,255,.02);
       position:sticky;
       top:0;
+      z-index:1;
     }
 
     td.name{
       text-align:left;
       font-weight:900;
-      min-width:150px;
-      white-space:nowrap;
+      min-width:160px;
     }
 
-    .frame-box{
-      min-width:78px;
-    }
-
-    .frame-top{
-      display:flex;
-      justify-content:space-between;
-      gap:6px;
-      color:var(--muted);
-      font-size:.72rem;
-      margin-bottom:4px;
-      text-transform:uppercase;
-      font-weight:800;
-    }
-
-    .throws{
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:4px;
-      font-family:"Oswald", sans-serif;
-      font-size:1.1rem;
-      letter-spacing:.04em;
-    }
-
-    .total-cell{
-      font-family:"Oswald", sans-serif;
+    td.total{
+      font-family:"Anton", sans-serif;
       font-size:1.5rem;
-      color:var(--gold);
-      font-weight:700;
+      color:var(--green-deep);
+      font-weight:400;
+    }
+
+    .hole-cell.current{
+      background:rgba(45,123,70,.08);
+      box-shadow:inset 0 0 0 2px rgba(45,123,70,.18);
+      font-weight:900;
     }
 
     .active-row{
-      outline:2px solid rgba(88,208,255,.45);
+      outline:2px solid rgba(120,195,230,.45);
       outline-offset:-2px;
-      background:rgba(88,208,255,.05);
+      background:rgba(120,195,230,.06);
     }
 
     .history-list, .leader-list{
@@ -622,8 +669,8 @@
     .history-item, .leader-item{
       padding:14px;
       border-radius:16px;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(255,255,255,.04);
+      border:1px solid rgba(22,32,21,.08);
+      background:rgba(255,255,255,.45);
     }
 
     .history-top{
@@ -641,8 +688,8 @@
       justify-content:center;
       padding:8px 10px;
       border-radius:999px;
-      background:rgba(255,255,255,.05);
-      border:1px solid rgba(255,255,255,.08);
+      background:rgba(22,32,21,.05);
+      border:1px solid rgba(22,32,21,.08);
       font-weight:800;
       color:var(--muted);
       font-size:.84rem;
@@ -650,7 +697,7 @@
 
     .leader-item{
       display:grid;
-      grid-template-columns:1.4fr .6fr .6fr .6fr 1fr;
+      grid-template-columns:1.4fr .7fr .7fr .7fr .9fr .8fr;
       gap:10px;
       align-items:center;
     }
@@ -668,39 +715,69 @@
     .reveal:nth-child(4){animation-delay:.24s}
 
     @keyframes rise{
-      to{opacity:1;transform:translateY(0)}
+      to{opacity:1; transform:translateY(0)}
     }
 
     @media (max-width:1120px){
-      .layout,.game-layout,.hero{grid-template-columns:1fr}
-      .hero-art{border-left:0;border-top:1px solid rgba(255,255,255,.08);min-height:340px}
+      .layout, .game-layout, .hero{
+        grid-template-columns:1fr;
+      }
+      .hero-visual{
+        min-height:340px;
+        border-left:0;
+        border-top:1px solid rgba(22,32,21,.08);
+      }
     }
 
     @media (max-width:760px){
-      .topbar{flex-direction:column;align-items:flex-start}
-      .meta-strip,.controls,.bottom-actions{grid-template-columns:1fr 1fr}
-      .numbers{grid-template-columns:repeat(4,1fr)}
-      .leader-item{grid-template-columns:1fr 1fr}
+      .topbar{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+      .setup-grid,
+      .meta-strip,
+      .mult-row,
+      .action-row{
+        grid-template-columns:1fr 1fr;
+      }
+      .target-grid{
+        grid-template-columns:repeat(4,1fr);
+      }
+      .leader-item{
+        grid-template-columns:1fr 1fr;
+      }
     }
 
     @media (max-width:560px){
-      .meta-strip,.controls,.bottom-actions{grid-template-columns:1fr}
-      .numbers{grid-template-columns:repeat(3,1fr)}
-      .player-row{grid-template-columns:1fr}
+      .setup-grid,
+      .meta-strip,
+      .mult-row,
+      .action-row{
+        grid-template-columns:1fr;
+      }
+      .target-grid{
+        grid-template-columns:repeat(3,1fr);
+      }
+      .player-row{
+        grid-template-columns:1fr;
+      }
+      .dart-track{
+        grid-template-columns:1fr;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
+  <div class="shell">
     <header class="topbar reveal">
       <div class="brand">
-        <div class="mark">10</div>
-        <div>
-          <h1>Bowling Darts</h1>
-          <p>Select the alley with dart 1, then score pins with darts 2 and 3. Supports multiple players, local history, and leaderboard.</p>
+        <div class="badge" aria-hidden="true"></div>
+        <div class="brand-copy">
+          <h1>Golf Darts</h1>
+          <p>Hit the current hole only, throw three darts, and keep the lowest score possible. Best dart on each hole wins the hole for your scorecard.</p>
         </div>
       </div>
-      <div class="top-actions">
+      <div class="header-actions">
         <button class="btn btn-alt" id="leaderboardToggle">Leaderboard</button>
         <button class="btn" id="historyToggle">History</button>
       </div>
@@ -711,23 +788,36 @@
         <div class="hero">
           <div class="hero-copy">
             <div>
-              <span class="eyebrow">Frame by Frame</span>
-              <h2>Pick your alley. Knock them down.</h2>
+              <span class="eyebrow">Lowest Score Wins</span>
+              <h2>Play the course, not the crowd.</h2>
             </div>
 
-            <div class="rules">
-              <div class="rule"><strong>Dart 1:</strong> screen shows <strong>SELECT ALLEY</strong>. Choose any number 1–20.</div>
-              <div class="rule"><strong>Dart 2 / 3 scoring:</strong> Triple = 9, Outer Single = 3, Inner Single = 7, Double = 10.</div>
-              <div class="rule"><strong>Singles rule:</strong> same single hit twice in one frame counts <strong>0</strong> on the second hit.</div>
-              <div class="rule"><strong>Spare:</strong> if darts 2 and 3 reach exactly <strong>10</strong>, add <strong>+5</strong> bonus.</div>
-              <div class="rule"><strong>Perfect game:</strong> <strong>200</strong>.</div>
+            <div class="rule-stack">
+              <div class="rule"><strong>9 holes:</strong> targets <strong>1–9</strong>. <strong>18 holes:</strong> targets <strong>1–18</strong>.</div>
+              <div class="rule"><strong>Each hole = 3 darts.</strong> The app scores the <strong>best hit only</strong> from those three darts.</div>
+              <div class="rule"><strong>Double = 1</strong> (hole in one), <strong>Triple = 2</strong> (eagle), <strong>Inner Single = 3</strong> (birdie), <strong>Outer Single = 4</strong> (par), <strong>Miss = 5</strong> (bogey).</div>
+              <div class="rule"><strong>Wrong number or bull</strong> counts as a miss for that dart unless bull is the current hole, which it never is in 9 or 18 hole mode.</div>
             </div>
 
-            <div class="panel" style="background:rgba(0,0,0,.12)">
+            <div class="panel" style="background:rgba(255,255,255,.3)">
               <div class="panel-inner">
                 <h3 class="section-title">Start Match</h3>
 
                 <div class="player-list" id="playerList"></div>
+
+                <div class="setup-grid">
+                  <div class="field">
+                    <label for="gameMode">Game Mode</label>
+                    <select id="gameMode">
+                      <option value="9">9 Holes</option>
+                      <option value="18">18 Holes</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="matchDate">Match Date</label>
+                    <input id="matchDate" type="date" />
+                  </div>
+                </div>
 
                 <div class="actions">
                   <button class="btn btn-alt" id="addPlayerBtn" type="button">Add Player</button>
@@ -737,15 +827,12 @@
             </div>
           </div>
 
-          <div class="hero-art" aria-hidden="true">
-            <div class="lane">
-              <div class="pins">
-                <div class="pin"></div><div class="pin"></div><div class="pin"></div><div class="pin"></div><div class="pin"></div>
-                <div class="pin"></div><div class="pin"></div><div class="pin"></div><div class="pin"></div><div class="pin"></div>
-              </div>
-              <div class="dart d1"></div>
-              <div class="dart d2"></div>
-              <div class="dart d3"></div>
+          <div class="hero-visual" aria-hidden="true">
+            <div class="course">
+              <div class="flag"></div>
+              <div class="ring r1"></div>
+              <div class="ring r2"></div>
+              <div class="ring r3"></div>
             </div>
           </div>
         </div>
@@ -757,7 +844,7 @@
             <div class="score-head">
               <div>
                 <h3 class="section-title">Match History</h3>
-                <div class="sub">Saved in local storage</div>
+                <div class="sub">Stored in local storage</div>
               </div>
             </div>
             <div class="history-list" id="historyList"></div>
@@ -767,7 +854,7 @@
             <div class="score-head">
               <div>
                 <h3 class="section-title">Leaderboard</h3>
-                <div class="sub">Wins, losses, ties, pins per game</div>
+                <div class="sub">Wins, losses, ties, win%, ELO</div>
               </div>
             </div>
             <div class="leader-list" id="leaderboardList"></div>
@@ -785,40 +872,46 @@
               <span class="v" id="currentPlayerLabel">Player 1</span>
             </div>
             <div class="meta">
-              <span class="k">Frame</span>
-              <span class="v" id="frameLabel">1 / 10</span>
+              <span class="k">Game</span>
+              <span class="v" id="modeLabel">9 Holes</span>
+            </div>
+            <div class="meta">
+              <span class="k">Hole</span>
+              <span class="v"><span class="hole-pill" id="holeLabel">1</span></span>
             </div>
             <div class="meta">
               <span class="k">Dart</span>
               <span class="v" id="dartLabel">1 / 3</span>
             </div>
             <div class="meta">
-              <span class="k">Mode</span>
-              <span class="v" id="modeLabel">Select Alley</span>
-            </div>
-            <div class="meta">
-              <span class="k">Alley</span>
-              <span class="v" id="alleyLabel">—</span>
+              <span class="k">Selected</span>
+              <span class="v" id="multLabel">Outer</span>
             </div>
           </div>
 
-          <div class="controls">
-            <button class="shot-btn" data-shot="Miss">Miss<small>0 pins</small></button>
-            <button class="shot-btn" data-shot="Outer Single">Outer<small>3 pins</small></button>
-            <button class="shot-btn" data-shot="Inner Single">Inner<small>7 pins</small></button>
-            <button class="shot-btn" data-shot="Triple">Triple<small>9 pins</small></button>
-            <button class="shot-btn" data-shot="Double">Double<small>10 pins</small></button>
+          <div class="dart-track" id="dartTrack">
+            <div class="dart-slot"><div><span class="n">Dart 1</span><span class="v" id="dart1View">—</span></div></div>
+            <div class="dart-slot"><div><span class="n">Dart 2</span><span class="v" id="dart2View">—</span></div></div>
+            <div class="dart-slot"><div><span class="n">Dart 3</span><span class="v" id="dart3View">—</span></div></div>
           </div>
 
-          <div class="numbers" id="numberGrid"></div>
+          <div class="mult-row" role="group" aria-label="Shot type">
+            <button class="mult-btn active" data-shot="outer">Outer Single</button>
+            <button class="mult-btn" data-shot="inner">Inner Single</button>
+            <button class="mult-btn" data-shot="double">Double</button>
+            <button class="mult-btn" data-shot="triple">Triple</button>
+            <button class="mult-btn btn-warn" id="missBtn">Miss</button>
+          </div>
 
-          <div class="bottom-actions">
+          <div class="target-grid" id="targetGrid" aria-label="Target buttons"></div>
+
+          <div class="action-row">
             <button class="btn" id="undoBtn">Undo</button>
-            <button class="btn btn-good" id="nextBtn">End Turn</button>
+            <button class="btn btn-good" id="finishHoleBtn">End Turn</button>
             <button class="btn btn-warn" id="newGameBtn">New Game</button>
           </div>
 
-          <div class="announce" id="announcement">Enter player names and start the game.</div>
+          <div class="announce" id="announcement">Add players and start your round.</div>
         </div>
       </section>
 
@@ -826,12 +919,12 @@
         <div class="panel-inner">
           <div class="score-head">
             <div>
-              <h3 class="section-title">Scoreboard</h3>
-              <div class="sub">Bowling-style frames, 10 frames total</div>
+              <h3 class="section-title">Scorecard</h3>
+              <div class="sub">Current hole highlighted • lowest total wins</div>
             </div>
           </div>
           <div class="table-wrap">
-            <table>
+            <table aria-label="Golf Darts scorecard">
               <thead id="scoreHead"></thead>
               <tbody id="scoreBody"></tbody>
             </table>
@@ -843,15 +936,34 @@
 
   <script>
     const STORAGE_KEYS = {
-      history: "bowling_darts_history_v3",
-      leaderboard: "bowling_darts_leaderboard_v3"
+      history: "golf_darts_history_v1",
+      leaderboard: "golf_darts_leaderboard_v1"
+    };
+
+    const SHOT_POINTS = {
+      double: 1,
+      triple: 2,
+      inner: 3,
+      outer: 4,
+      miss: 5
+    };
+
+    const SHOT_LABELS = {
+      double: "Double",
+      triple: "Triple",
+      inner: "Inner",
+      outer: "Outer",
+      miss: "Miss"
     };
 
     const state = {
       players: [],
+      totalHoles: 9,
       currentPlayer: 0,
-      frame: 0,
-      dart: 1,
+      currentHole: 1,
+      currentDart: 1,
+      selectedShot: "outer",
+      dartsThisTurn: [],
       started: false,
       gameOver: false,
       historyStack: []
@@ -861,27 +973,40 @@
       playerList: document.getElementById("playerList"),
       addPlayerBtn: document.getElementById("addPlayerBtn"),
       startGameBtn: document.getElementById("startGameBtn"),
+      gameMode: document.getElementById("gameMode"),
+      matchDate: document.getElementById("matchDate"),
       gameArea: document.getElementById("gameArea"),
       currentPlayerLabel: document.getElementById("currentPlayerLabel"),
-      frameLabel: document.getElementById("frameLabel"),
-      dartLabel: document.getElementById("dartLabel"),
       modeLabel: document.getElementById("modeLabel"),
-      alleyLabel: document.getElementById("alleyLabel"),
+      holeLabel: document.getElementById("holeLabel"),
+      dartLabel: document.getElementById("dartLabel"),
+      multLabel: document.getElementById("multLabel"),
+      dart1View: document.getElementById("dart1View"),
+      dart2View: document.getElementById("dart2View"),
+      dart3View: document.getElementById("dart3View"),
+      targetGrid: document.getElementById("targetGrid"),
+      missBtn: document.getElementById("missBtn"),
+      undoBtn: document.getElementById("undoBtn"),
+      finishHoleBtn: document.getElementById("finishHoleBtn"),
+      newGameBtn: document.getElementById("newGameBtn"),
       announcement: document.getElementById("announcement"),
       scoreHead: document.getElementById("scoreHead"),
       scoreBody: document.getElementById("scoreBody"),
-      numberGrid: document.getElementById("numberGrid"),
-      undoBtn: document.getElementById("undoBtn"),
-      nextBtn: document.getElementById("nextBtn"),
-      newGameBtn: document.getElementById("newGameBtn"),
-      shotButtons: [...document.querySelectorAll("[data-shot]")],
       historyList: document.getElementById("historyList"),
       leaderboardList: document.getElementById("leaderboardList"),
       historyPanel: document.getElementById("historyPanel"),
       leaderboardPanel: document.getElementById("leaderboardPanel"),
       leaderboardToggle: document.getElementById("leaderboardToggle"),
-      historyToggle: document.getElementById("historyToggle")
+      historyToggle: document.getElementById("historyToggle"),
+      shotButtons: () => [...document.querySelectorAll("[data-shot]")]
     };
+
+    function todayStr() {
+      const d = new Date();
+      const offset = d.getTimezoneOffset();
+      const local = new Date(d.getTime() - offset * 60000);
+      return local.toISOString().slice(0, 10);
+    }
 
     function getStorage(key, fallback) {
       try {
@@ -899,26 +1024,11 @@
       return JSON.parse(JSON.stringify(obj));
     }
 
-    function createFrame() {
-      return {
-        alley: null,
-        shots: [null, null, null],
-        pins: [0, 0, 0],
-        total: 0,
-        bonus: 0,
-        mark: "",
-        closed: false,
-        singleHitFlags: {
-          outer: false,
-          inner: false
-        }
-      };
-    }
-
     function createPlayer(name) {
       return {
         name,
-        frames: Array.from({ length: 10 }, createFrame),
+        scores: [],
+        dartLog: [],
         total: 0
       };
     }
@@ -934,6 +1044,7 @@
         </div>
         <button class="remove-player" type="button" aria-label="Remove player">×</button>
       `;
+
       const removeBtn = row.querySelector(".remove-player");
       removeBtn.addEventListener("click", () => {
         if (el.playerList.querySelectorAll(".player-row").length <= 2) return;
@@ -951,15 +1062,12 @@
     }
 
     function refreshPlayerLabels() {
-      [...el.playerList.querySelectorAll(".player-row")].forEach((row, idx) => {
-        const label = row.querySelector("label");
-        if (label) label.textContent = `Player ${idx + 1}`;
+      const rows = [...el.playerList.querySelectorAll(".player-row")];
+      rows.forEach((row, idx) => {
+        row.querySelector("label").textContent = `Player ${idx + 1}`;
       });
-
-      const rows = el.playerList.querySelectorAll(".player-row");
       rows.forEach(row => {
-        const btn = row.querySelector(".remove-player");
-        btn.style.visibility = rows.length <= 2 ? "hidden" : "visible";
+        row.querySelector(".remove-player").style.visibility = rows.length <= 2 ? "hidden" : "visible";
       });
     }
 
@@ -969,53 +1077,34 @@
         .filter(Boolean);
     }
 
-    function startGame() {
-      const names = getPlayerNames();
-      if (names.length < 2) {
-        setAnnouncement("Enter at least 2 player names to start.", "warn");
-        return;
-      }
-
-      state.players = names.map(name => createPlayer(name));
-      state.currentPlayer = 0;
-      state.frame = 0;
-      state.dart = 1;
-      state.started = true;
-      state.gameOver = false;
-      state.historyStack = [];
-
-      el.gameArea.classList.remove("hidden");
-      setAnnouncement("SELECT ALLEY — choose a number 1 to 20.", "");
-      buildNumberGrid();
-      updateMeta();
-      renderBoard();
-    }
-
-    function buildNumberGrid() {
-      el.numberGrid.innerHTML = "";
+    function buildTargetGrid() {
+      el.targetGrid.innerHTML = "";
       for (let i = 1; i <= 20; i++) {
         const btn = document.createElement("button");
-        btn.className = "num-btn";
+        btn.className = "target-btn";
         btn.textContent = i;
-        btn.addEventListener("click", () => selectAlley(i));
-        el.numberGrid.appendChild(btn);
+        btn.dataset.target = i;
+        btn.addEventListener("click", () => recordThrow(i));
+        el.targetGrid.appendChild(btn);
       }
-    }
 
-    function currentPlayerObj() {
-      return state.players[state.currentPlayer];
-    }
-
-    function currentFrameObj() {
-      return currentPlayerObj().frames[state.frame];
+      const bull = document.createElement("button");
+      bull.className = "target-btn bull";
+      bull.textContent = "Bull";
+      bull.dataset.target = "BULL";
+      bull.addEventListener("click", () => recordThrow("BULL"));
+      el.targetGrid.appendChild(bull);
     }
 
     function saveSnapshot() {
       state.historyStack.push(deepClone({
         players: state.players,
+        totalHoles: state.totalHoles,
         currentPlayer: state.currentPlayer,
-        frame: state.frame,
-        dart: state.dart,
+        currentHole: state.currentHole,
+        currentDart: state.currentDart,
+        selectedShot: state.selectedShot,
+        dartsThisTurn: state.dartsThisTurn,
         started: state.started,
         gameOver: state.gameOver
       }));
@@ -1027,176 +1116,164 @@
     }
 
     function updateMeta() {
-      if (!state.started || !state.players.length) return;
-      const player = currentPlayerObj();
-      const frame = currentFrameObj();
-      el.currentPlayerLabel.textContent = player.name;
-      el.frameLabel.textContent = `${Math.min(state.frame + 1, 10)} / 10`;
-      el.dartLabel.textContent = `${state.dart} / 3`;
-      el.modeLabel.textContent = state.dart === 1 ? "Select Alley" : "Score Pins";
-      el.alleyLabel.textContent = frame.alley ?? "—";
+      if (!state.players.length) return;
 
-      const selecting = state.dart === 1;
-      el.numberGrid.style.opacity = selecting ? "1" : ".45";
-      el.numberGrid.style.pointerEvents = selecting ? "auto" : "none";
+      el.currentPlayerLabel.textContent = state.players[state.currentPlayer]?.name ?? "—";
+      el.modeLabel.textContent = `${state.totalHoles} Holes`;
+      el.holeLabel.textContent = state.currentHole;
+      el.dartLabel.textContent = `${state.currentDart} / 3`;
+      el.multLabel.textContent = SHOT_LABELS[state.selectedShot];
 
-      el.shotButtons.forEach(btn => {
-        btn.disabled = selecting || state.gameOver;
-        btn.style.opacity = selecting || state.gameOver ? ".45" : "1";
-        btn.style.pointerEvents = selecting || state.gameOver ? "none" : "auto";
+      const dartViews = [el.dart1View, el.dart2View, el.dart3View];
+      dartViews.forEach((node, idx) => {
+        const dart = state.dartsThisTurn[idx];
+        node.textContent = dart ? `${dart.label}` : "—";
+      });
+
+      el.shotButtons().forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.shot === state.selectedShot);
+      });
+
+      [...el.targetGrid.querySelectorAll(".target-btn")].forEach(btn => {
+        const target = btn.dataset.target;
+        const hole = String(state.currentHole);
+        btn.classList.toggle("current-hole", target === hole);
       });
 
       el.undoBtn.disabled = !state.historyStack.length;
     }
 
-    function shotSymbol(shot, pins, index, frame) {
-      if (!shot) return "";
-      if (index === 0) return frame.alley ?? "";
-      if (shot === "Miss") return "-";
-      if (frame.mark === "X" && index === 1 && pins === 10) return "X";
-      if (frame.mark === "/" && index === 2) return "/";
-      if (shot === "Double") return "X";
-      if (shot === "Triple") return "T";
-      if (shot === "Outer Single") return "O";
-      if (shot === "Inner Single") return "I";
-      return shot[0];
-    }
-
-    function renderBoard() {
+    function renderScoreboard() {
       el.scoreHead.innerHTML = `
         <tr>
           <th>Player</th>
-          ${Array.from({ length: 10 }, (_, i) => `<th>F${i + 1}</th>`).join("")}
+          ${Array.from({ length: state.totalHoles }, (_, i) => `<th>H${i + 1}</th>`).join("")}
           <th>Total</th>
         </tr>
       `;
 
-      el.scoreBody.innerHTML = state.players.map((player, pIndex) => `
-        <tr class="${state.started && !state.gameOver && pIndex === state.currentPlayer ? "active-row" : ""}">
+      el.scoreBody.innerHTML = state.players.map((player, index) => `
+        <tr class="${state.started && !state.gameOver && index === state.currentPlayer ? "active-row" : ""}">
           <td class="name">${player.name}</td>
-          ${player.frames.map(frame => `
-            <td class="frame-box">
-              <div class="frame-top">
-                <span>${frame.alley ?? "—"}</span>
-                <span>${frame.total || ""}</span>
-              </div>
-              <div class="throws">
-                <span>${shotSymbol(frame.shots[0], frame.pins[0], 0, frame)}</span>
-                <span>${shotSymbol(frame.shots[1], frame.pins[1], 1, frame)}</span>
-                <span>${shotSymbol(frame.shots[2], frame.pins[2], 2, frame)}</span>
-              </div>
+          ${Array.from({ length: state.totalHoles }, (_, i) => `
+            <td class="hole-cell ${state.currentHole === i + 1 && !state.gameOver ? "current" : ""}">
+              ${player.scores[i] ?? ""}
             </td>
           `).join("")}
-          <td class="total-cell">${player.total}</td>
+          <td class="total">${player.total}</td>
         </tr>
       `).join("");
     }
 
-    function selectAlley(number) {
-      if (!state.started || state.gameOver || state.dart !== 1) return;
-      saveSnapshot();
-      const frame = currentFrameObj();
-      frame.alley = number;
-      frame.shots[0] = number;
-      frame.closed = false;
-      state.dart = 2;
-      setAnnouncement(`${currentPlayerObj().name} selected alley ${number}. Now score pins on darts 2 and 3.`, "");
-      updateMeta();
-      renderBoard();
-    }
-
-    function scoreShot(shot) {
-      if (!state.started || state.gameOver || state.dart === 1) return;
-      saveSnapshot();
-
-      const frame = currentFrameObj();
-      const shotIndex = state.dart - 1;
-      let pins = 0;
-
-      if (shot === "Miss") {
-        pins = 0;
-      } else if (shot === "Double") {
-        pins = 10;
-      } else if (shot === "Triple") {
-        pins = 9;
-      } else if (shot === "Outer Single") {
-        if (frame.singleHitFlags.outer) {
-          pins = 0;
-        } else {
-          pins = 3;
-          frame.singleHitFlags.outer = true;
-        }
-      } else if (shot === "Inner Single") {
-        if (frame.singleHitFlags.inner) {
-          pins = 0;
-        } else {
-          pins = 7;
-          frame.singleHitFlags.inner = true;
-        }
-      }
-
-      frame.shots[shotIndex] = shot;
-      frame.pins[shotIndex] = pins;
-
-      if (state.dart === 2) {
-        state.dart = 3;
-        setAnnouncement(`${currentPlayerObj().name} scores ${pins} pins. Final dart for this frame.`, pins > 0 ? "good" : "");
-        updateMeta();
-        renderBoard();
+    function startGame() {
+      const names = getPlayerNames();
+      if (names.length < 2) {
+        setAnnouncement("Enter at least 2 players to start.", "warn");
         return;
       }
 
-      finalizeFrame();
+      state.players = names.map(createPlayer);
+      state.totalHoles = Number(el.gameMode.value);
+      state.currentPlayer = 0;
+      state.currentHole = 1;
+      state.currentDart = 1;
+      state.selectedShot = "outer";
+      state.dartsThisTurn = [];
+      state.started = true;
+      state.gameOver = false;
+      state.historyStack = [];
+
+      el.gameArea.classList.remove("hidden");
+      buildTargetGrid();
+      updateMeta();
+      renderScoreboard();
+      setAnnouncement(`Hole ${state.currentHole}: ${state.players[0].name} throws for ${state.currentHole}. Best dart counts.`, "");
     }
 
-    function finalizeFrame() {
-      const player = currentPlayerObj();
-      const frame = currentFrameObj();
-      const p2 = frame.pins[1] || 0;
-      const p3 = frame.pins[2] || 0;
-      const raw = p2 + p3;
+    function shotScoreForThrow(target, shotType) {
+      if (shotType === "miss") {
+        return {
+          points: 5,
+          label: "Miss",
+          valid: false
+        };
+      }
 
-      frame.bonus = 0;
-      frame.mark = "";
+      if (String(target) !== String(state.currentHole)) {
+        return {
+          points: 5,
+          label: `Wrong #`,
+          valid: false
+        };
+      }
 
-      if (p2 === 10 || p3 === 10) {
-        frame.mark = "X";
-        frame.total = 10;
-      } else if (raw === 10) {
-        frame.mark = "/";
-        frame.bonus = 5;
-        frame.total = 15;
+      return {
+        points: SHOT_POINTS[shotType],
+        label: SHOT_LABELS[shotType],
+        valid: true
+      };
+    }
+
+    function recordThrow(target) {
+      if (!state.started || state.gameOver) return;
+
+      saveSnapshot();
+
+      const result = shotScoreForThrow(target, state.selectedShot);
+      state.dartsThisTurn.push({
+        target,
+        shot: state.selectedShot,
+        points: result.points,
+        label: result.label
+      });
+
+      if (state.currentDart >= 3) {
+        finalizeTurn();
       } else {
-        frame.total = raw;
+        state.currentDart += 1;
+        updateMeta();
+
+        if (result.valid) {
+          setAnnouncement(`${state.players[state.currentPlayer].name} hits ${target} • ${result.label} for ${result.points}.`, "good");
+        } else {
+          setAnnouncement(`${state.players[state.currentPlayer].name} records a miss value of 5.`, result.label === "Miss" ? "" : "warn");
+        }
       }
+    }
 
-      if (p2 === 9 && p3 === 9) {
-        frame.total = 18;
-      }
+    function recordMiss() {
+      if (!state.started || state.gameOver) return;
+      saveSnapshot();
 
-      if (
-        (frame.shots[1] === "Outer Single" && frame.shots[2] === "Inner Single") ||
-        (frame.shots[1] === "Inner Single" && frame.shots[2] === "Outer Single")
-      ) {
-        frame.total = 15;
-        frame.mark = "/";
-        frame.bonus = 5;
-      }
+      state.dartsThisTurn.push({
+        target: "MISS",
+        shot: "miss",
+        points: 5,
+        label: "Miss"
+      });
 
-      if (frame.shots[1] === "Triple" && frame.shots[2] === "Triple") {
-        frame.total = 18;
-      }
-
-      player.total = player.frames.reduce((sum, f) => sum + (f.total || 0), 0);
-      frame.closed = true;
-
-      if (frame.mark === "X") {
-        setAnnouncement(`${player.name} scores a strike frame for 10.`, "good");
-      } else if (frame.mark === "/") {
-        setAnnouncement(`${player.name} scores a spare for 10 plus 5 bonus.`, "good");
+      if (state.currentDart >= 3) {
+        finalizeTurn();
       } else {
-        setAnnouncement(`${player.name} scores ${frame.total} pins in the frame.`, "");
+        state.currentDart += 1;
+        updateMeta();
+        setAnnouncement(`${state.players[state.currentPlayer].name} misses.`, "");
       }
+    }
+
+    function finalizeTurn() {
+      const player = state.players[state.currentPlayer];
+      const best = Math.min(...state.dartsThisTurn.map(d => d.points));
+      player.scores[state.currentHole - 1] = best;
+      player.total = player.scores.reduce((sum, value) => sum + value, 0);
+      player.dartLog.push({
+        hole: state.currentHole,
+        darts: deepClone(state.dartsThisTurn),
+        best
+      });
+
+      const bestDart = state.dartsThisTurn.find(d => d.points === best);
+      setAnnouncement(`${player.name} scores ${best} on hole ${state.currentHole} with ${bestDart?.label ?? "Miss"}.`, best <= 3 ? "good" : "");
 
       advanceTurn();
     }
@@ -1204,107 +1281,153 @@
     function advanceTurn() {
       state.currentPlayer = (state.currentPlayer + 1) % state.players.length;
       if (state.currentPlayer === 0) {
-        state.frame += 1;
+        state.currentHole += 1;
       }
 
-      state.dart = 1;
+      state.currentDart = 1;
+      state.selectedShot = "outer";
+      state.dartsThisTurn = [];
 
-      if (state.frame >= 10) {
+      if (state.currentHole > state.totalHoles) {
         finishGame();
         return;
       }
 
       updateMeta();
-      renderBoard();
+      renderScoreboard();
+      setAnnouncement(`Hole ${state.currentHole}: ${state.players[state.currentPlayer].name} throws for ${state.currentHole}.`, "");
     }
 
     function finishGame() {
       state.gameOver = true;
-      renderBoard();
+      updateMeta();
+      renderScoreboard();
 
-      const sorted = [...state.players].sort((a, b) => b.total - a.total);
-      const topScore = sorted[0].total;
-      const winners = sorted.filter(p => p.total === topScore);
+      const sorted = [...state.players].sort((a, b) => a.total - b.total);
+      const lowScore = sorted[0].total;
+      const winners = sorted.filter(player => player.total === lowScore);
 
-      let resultMessage = "";
       if (winners.length === 1) {
-        resultMessage = `${winners[0].name} wins with ${winners[0].total}.`;
+        setAnnouncement(`${winners[0].name} wins with ${lowScore}.`, "good");
       } else {
-        resultMessage = `Tie game at ${topScore} between ${winners.map(w => w.name).join(", ")}.`;
+        setAnnouncement(`Tie at ${lowScore} between ${winners.map(w => w.name).join(", ")}.`, "good");
       }
 
-      setAnnouncement(`Game over. ${resultMessage}`, "good");
-      saveMatch();
+      saveCompletedMatch();
       renderHistory();
       renderLeaderboard();
-      updateMeta();
     }
 
     function undo() {
       if (!state.historyStack.length) return;
       const prev = state.historyStack.pop();
+
       state.players = prev.players;
+      state.totalHoles = prev.totalHoles;
       state.currentPlayer = prev.currentPlayer;
-      state.frame = prev.frame;
-      state.dart = prev.dart;
+      state.currentHole = prev.currentHole;
+      state.currentDart = prev.currentDart;
+      state.selectedShot = prev.selectedShot;
+      state.dartsThisTurn = prev.dartsThisTurn;
       state.started = prev.started;
       state.gameOver = prev.gameOver;
-      setAnnouncement("Last action undone.", "");
+
       updateMeta();
-      renderBoard();
+      renderScoreboard();
+      setAnnouncement("Last action undone.", "");
+    }
+
+    function endTurnEarly() {
+      if (!state.started || state.gameOver) return;
+      if (!state.dartsThisTurn.length) {
+        setAnnouncement("Throw at least one dart before ending the turn.", "warn");
+        return;
+      }
+
+      saveSnapshot();
+
+      while (state.dartsThisTurn.length < 3) {
+        state.dartsThisTurn.push({
+          target: "MISS",
+          shot: "miss",
+          points: 5,
+          label: "Miss"
+        });
+      }
+
+      finalizeTurn();
     }
 
     function newGame() {
       startGame();
     }
 
-    function endTurn() {
-      if (!state.started || state.gameOver) return;
-      if (state.dart === 1) {
-        setAnnouncement("Select an alley before ending the turn.", "warn");
-        return;
-      }
-      if (state.dart === 2) {
-        setAnnouncement("You still have darts 2 and 3 to score.", "warn");
-        return;
-      }
-      finalizeFrame();
+    function baseLeaderboardRecord(name) {
+      return {
+        name,
+        matches: 0,
+        wins: 0,
+        losses: 0,
+        ties: 0,
+        elo: 1200
+      };
     }
 
-    function saveMatch() {
+    function expectedScore(ra, rb) {
+      return 1 / (1 + Math.pow(10, (rb - ra) / 400));
+    }
+
+    function updateEloForMatch(leaderboard, results) {
+      const k = 24;
+
+      results.forEach(player => {
+        if (!leaderboard[player.name]) leaderboard[player.name] = baseLeaderboardRecord(player.name);
+      });
+
+      for (let i = 0; i < results.length; i++) {
+        for (let j = i + 1; j < results.length; j++) {
+          const a = results[i];
+          const b = results[j];
+          const recA = leaderboard[a.name];
+          const recB = leaderboard[b.name];
+
+          const outcomeA = a.total < b.total ? 1 : a.total === b.total ? 0.5 : 0;
+          const ea = expectedScore(recA.elo, recB.elo);
+          const eb = expectedScore(recB.elo, recA.elo);
+
+          recA.elo = Math.round(recA.elo + k * (outcomeA - ea));
+          recB.elo = Math.round(recB.elo + k * ((1 - outcomeA) - eb));
+        }
+      }
+    }
+
+    function saveCompletedMatch() {
       const history = getStorage(STORAGE_KEYS.history, []);
       const leaderboard = getStorage(STORAGE_KEYS.leaderboard, {});
 
+      const sorted = [...state.players].sort((a, b) => a.total - b.total);
+      const lowScore = sorted[0].total;
+      const winners = sorted.filter(player => player.total === lowScore).map(player => player.name);
+
       const match = {
         id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-        date: new Date().toLocaleDateString(),
-        players: state.players.map(p => ({
-          name: p.name,
-          total: p.total,
-          frames: p.frames
-        }))
+        date: el.matchDate.value || todayStr(),
+        holes: state.totalHoles,
+        players: state.players.map(player => ({
+          name: player.name,
+          scores: player.scores,
+          total: player.total
+        })),
+        winner: winners.length === 1 ? winners[0] : "Tie"
       };
 
       history.unshift(match);
       setStorage(STORAGE_KEYS.history, history);
 
-      const topScore = Math.max(...state.players.map(p => p.total));
-      const winners = state.players.filter(p => p.total === topScore).map(p => p.name);
-
       state.players.forEach(player => {
-        if (!leaderboard[player.name]) {
-          leaderboard[player.name] = {
-            name: player.name,
-            wins: 0,
-            losses: 0,
-            ties: 0,
-            games: 0,
-            totalPins: 0
-          };
-        }
+        if (!leaderboard[player.name]) leaderboard[player.name] = baseLeaderboardRecord(player.name);
 
-        leaderboard[player.name].games += 1;
-        leaderboard[player.name].totalPins += player.total;
+        leaderboard[player.name].matches += 1;
 
         if (winners.length > 1 && winners.includes(player.name)) {
           leaderboard[player.name].ties += 1;
@@ -1315,25 +1438,29 @@
         }
       });
 
+      updateEloForMatch(leaderboard, state.players.map(player => ({
+        name: player.name,
+        total: player.total
+      })));
+
       setStorage(STORAGE_KEYS.leaderboard, leaderboard);
     }
 
     function renderHistory() {
       const history = getStorage(STORAGE_KEYS.history, []);
       if (!history.length) {
-        el.historyList.innerHTML = `<div class="history-item"><div class="muted">No saved matches yet.</div></div>`;
+        el.historyList.innerHTML = `<div class="history-item"><div class="muted">No saved rounds yet.</div></div>`;
         return;
       }
 
       el.historyList.innerHTML = history.map(match => `
         <article class="history-item">
           <div class="history-top">
-            <strong>${match.players.map(p => p.name).join(" vs ")}</strong>
+            <strong>${match.holes} Holes</strong>
             <span class="pill">${match.date}</span>
           </div>
-          <div class="muted" style="margin-top:8px">
-            ${match.players.map(p => `${p.name}: <strong>${p.total}</strong>`).join(" &nbsp;•&nbsp; ")}
-          </div>
+          <div style="margin-top:8px">${match.players.map(p => `${p.name}: <strong>${p.total}</strong>`).join(" &nbsp;•&nbsp; ")}</div>
+          <div class="muted" style="margin-top:8px">Winner: <strong>${match.winner}</strong></div>
         </article>
       `).join("");
     }
@@ -1343,22 +1470,23 @@
       const rows = Object.values(leaderboard)
         .map(player => ({
           ...player,
-          pinsPerGame: player.games ? player.totalPins / player.games : 0
+          winPct: player.matches ? (player.wins / player.matches) * 100 : 0
         }))
-        .sort((a, b) => b.wins - a.wins || b.pinsPerGame - a.pinsPerGame);
+        .sort((a, b) => b.elo - a.elo || b.winPct - a.winPct || b.wins - a.wins);
 
       if (!rows.length) {
-        el.leaderboardList.innerHTML = `<div class="leader-item"><strong>No leaderboard data yet.</strong><span class="muted">Finish a match to begin.</span></div>`;
+        el.leaderboardList.innerHTML = `<div class="leader-item"><strong>No leaderboard data yet.</strong><span class="muted">Play a match to start rankings.</span></div>`;
         return;
       }
 
-      el.leaderboardList.innerHTML = rows.map((p, i) => `
+      el.leaderboardList.innerHTML = rows.map((player, index) => `
         <div class="leader-item">
-          <div><strong>#${i + 1} ${p.name}</strong><div class="muted">${p.games} games</div></div>
-          <div><span class="pill">W ${p.wins}</span></div>
-          <div><span class="pill">L ${p.losses}</span></div>
-          <div><span class="pill">T ${p.ties}</span></div>
-          <div><span class="pill">${p.pinsPerGame.toFixed(2)} PPG</span></div>
+          <div><strong>#${index + 1} ${player.name}</strong><div class="muted">${player.matches} matches</div></div>
+          <div><span class="pill">W ${player.wins}</span></div>
+          <div><span class="pill">L ${player.losses}</span></div>
+          <div><span class="pill">T ${player.ties}</span></div>
+          <div><span class="pill">${player.winPct.toFixed(1)}%</span></div>
+          <div><span class="pill">${player.elo} ELO</span></div>
         </div>
       `).join("");
     }
@@ -1367,10 +1495,14 @@
     el.startGameBtn.addEventListener("click", startGame);
     el.undoBtn.addEventListener("click", undo);
     el.newGameBtn.addEventListener("click", newGame);
-    el.nextBtn.addEventListener("click", endTurn);
+    el.finishHoleBtn.addEventListener("click", endTurnEarly);
+    el.missBtn.addEventListener("click", recordMiss);
 
-    el.shotButtons.forEach(btn => {
-      btn.addEventListener("click", () => scoreShot(btn.dataset.shot));
+    document.addEventListener("click", (e) => {
+      const shotBtn = e.target.closest("[data-shot]");
+      if (!shotBtn) return;
+      state.selectedShot = shotBtn.dataset.shot;
+      updateMeta();
     });
 
     el.leaderboardToggle.addEventListener("click", () => {
@@ -1387,6 +1519,8 @@
 
     addPlayerField();
     addPlayerField();
+    el.matchDate.value = todayStr();
+    buildTargetGrid();
     renderHistory();
     renderLeaderboard();
 
