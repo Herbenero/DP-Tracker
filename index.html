@@ -3,1534 +3,1519 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Golf Darts</title>
-  <meta name="description" content="Golf Darts scorekeeper with multiplayer support, history, leaderboard, and ELO." />
+  <title>Tactics — Cricket Dart Game Tracker</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
   <style>
     :root{
-      --bg:#eef4ea;
-      --bg-2:#e4eddc;
-      --panel:#f9fcf6cc;
-      --panel-solid:#f7fbf3;
-      --ink:#162015;
-      --muted:#63725f;
-      --line:#d2dfcb;
-      --green:#2d7b46;
-      --green-deep:#184f2b;
-      --sand:#d9b76b;
-      --sky:#78c3e6;
-      --warn:#b53f3f;
-      --good:#2f8d58;
-      --shadow:0 24px 60px rgba(35,59,28,.12);
-      --radius:24px;
-      --max:1420px;
+      --bg:#0d1117;
+      --bg-soft:#121922;
+      --panel:#161f2b;
+      --panel-2:#1b2635;
+      --line:rgba(255,255,255,.08);
+      --line-strong:rgba(255,255,255,.16);
+      --text:#f5f7fb;
+      --muted:#9fb0c7;
+      --accent:#7af0b5;
+      --accent-2:#f7b955;
+      --danger:#ff6f7d;
+      --blue:#7fc4ff;
+      --violet:#bba7ff;
+      --gold:#ffd66b;
+      --shadow:0 18px 60px rgba(0,0,0,.35);
+      --radius:22px;
+      --radius-sm:14px;
+      --max:1440px;
     }
 
     *{box-sizing:border-box}
-    html{scroll-behavior:smooth}
-    body{
-      margin:0;
-      min-height:100vh;
-      color:var(--ink);
-      font-family:"Inter", sans-serif;
-      background:
-        radial-gradient(circle at 12% 10%, rgba(120,195,230,.18), transparent 22%),
-        radial-gradient(circle at 82% 12%, rgba(217,183,107,.18), transparent 18%),
-        linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
-      overflow-x:hidden;
-    }
-
-    body::before{
-      content:"";
-      position:fixed;
-      inset:0;
-      pointer-events:none;
-      opacity:.2;
-      background:
-        linear-gradient(rgba(22,32,21,.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(22,32,21,.03) 1px, transparent 1px);
-      background-size:28px 28px;
-      mask-image:radial-gradient(circle at center, black 48%, transparent 92%);
-    }
-
-    .shell{
-      width:min(var(--max), calc(100% - 24px));
-      margin:0 auto;
-      padding:20px 0 42px;
-    }
-
-    .topbar{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:18px;
-      padding:8px 0 18px;
-      border-bottom:1px solid rgba(22,32,21,.08);
-      margin-bottom:24px;
-    }
-
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:14px;
-    }
-
-    .badge{
-      width:60px;
-      height:60px;
-      border-radius:18px;
-      display:grid;
-      place-items:center;
-      background:
-        radial-gradient(circle at 30% 28%, rgba(255,255,255,.75), transparent 24%),
-        linear-gradient(145deg, rgba(45,123,70,.18), rgba(120,195,230,.14)),
-        var(--panel-solid);
-      border:1px solid rgba(22,32,21,.08);
-      box-shadow:var(--shadow);
-      position:relative;
-      overflow:hidden;
-    }
-
-    .badge::before{
-      content:"⛳";
-      font-size:1.7rem;
-      transform:translateY(1px);
-    }
-
-    .brand-copy h1{
-      margin:0;
-      font-family:"Anton", sans-serif;
-      font-size:clamp(2.4rem, 5vw, 4.5rem);
-      line-height:.92;
-      letter-spacing:.04em;
-      font-weight:400;
-      text-transform:uppercase;
-    }
-
-    .brand-copy p{
-      margin:5px 0 0;
-      color:var(--muted);
-      max-width:58ch;
-      font-size:.96rem;
-    }
-
-    .header-actions{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-
-    .layout{
-      display:grid;
-      grid-template-columns:1.06fr .94fr;
-      gap:22px;
-      align-items:start;
-    }
-
-    .panel{
-      background:linear-gradient(180deg, rgba(255,255,255,.58), rgba(255,255,255,.4));
-      border:1px solid rgba(22,32,21,.08);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      backdrop-filter:blur(12px);
-      overflow:hidden;
-    }
-
-    .panel-inner{padding:22px}
-    .hidden{display:none !important}
-
-    .hero{
-      display:grid;
-      grid-template-columns:1.08fr .92fr;
-      min-height:470px;
-    }
-
-    .hero-copy{
-      padding:28px;
-      display:flex;
-      flex-direction:column;
-      justify-content:space-between;
-      gap:20px;
-    }
-
-    .eyebrow{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      color:var(--green);
-      text-transform:uppercase;
-      letter-spacing:.14em;
-      font-size:.78rem;
-      font-weight:800;
-    }
-
-    .eyebrow::before{
-      content:"";
-      width:28px;
-      height:1px;
-      background:currentColor;
-    }
-
-    .hero-copy h2{
-      margin:0;
-      font-family:"Anton", sans-serif;
-      font-size:clamp(3.1rem, 7vw, 6.3rem);
-      line-height:.9;
-      letter-spacing:.04em;
-      text-transform:uppercase;
-      max-width:8ch;
-      font-weight:400;
-    }
-
-    .hero-copy p{
-      margin:0;
-      color:var(--muted);
-      max-width:52ch;
-      font-size:1rem;
-    }
-
-    .rule-stack{
-      display:grid;
-      gap:12px;
-    }
-
-    .rule{
-      padding:14px 16px;
-      border-radius:16px;
-      border:1px solid rgba(22,32,21,.08);
-      background:rgba(255,255,255,.4);
-      color:var(--muted);
-    }
-
-    .rule strong{color:var(--ink)}
-
-    .hero-visual{
-      position:relative;
+    html,body{margin:0;padding:0;background:
+      radial-gradient(circle at top left, rgba(122,240,181,.08), transparent 30%),
+      radial-gradient(circle at 100% 0%, rgba(127,196,255,.08), transparent 25%),
+      linear-gradient(180deg, #0b1016, #0d1117 35%, #0f141d 100%);
+      color:var(--text);
+      font-family:"Space Grotesk", sans-serif;
       min-height:100%;
-      border-left:1px solid rgba(22,32,21,.08);
-      background:
-        radial-gradient(circle at 25% 24%, rgba(120,195,230,.18), transparent 22%),
-        radial-gradient(circle at 78% 62%, rgba(217,183,107,.18), transparent 24%),
-        linear-gradient(180deg, rgba(255,255,255,.14), transparent 55%);
-      overflow:hidden;
     }
-
-    .course{
-      position:absolute;
-      inset:24px;
-      border-radius:28px;
-      background:
-        radial-gradient(circle at 70% 22%, #f0d694 0 8%, transparent 8.5%),
-        radial-gradient(circle at 72% 24%, rgba(0,0,0,.08), transparent 18%),
-        radial-gradient(circle at 28% 72%, #f0d694 0 10%, transparent 10.5%),
-        linear-gradient(180deg, #8ccf72 0%, #5baa56 38%, #4e9a47 100%);
-      box-shadow:
-        inset 0 0 0 2px rgba(255,255,255,.16),
-        inset 0 0 80px rgba(0,0,0,.08),
-        0 30px 70px rgba(32,52,27,.16);
-      overflow:hidden;
+    body{overflow-x:hidden}
+    a{color:inherit}
+    button,input,select,textarea{font:inherit}
+    .app{
+      width:min(var(--max), calc(100% - 24px));
+      margin:18px auto 40px;
     }
-
-    .course::before{
-      content:"";
-      position:absolute;
-      inset:0;
-      background:
-        radial-gradient(circle at 62% 18%, #15351d 0 1.1%, transparent 1.3%),
-        linear-gradient(135deg, transparent 0 36%, rgba(255,255,255,.16) 36% 38%, transparent 38%),
-        radial-gradient(circle at 18% 18%, rgba(255,255,255,.18), transparent 20%),
-        radial-gradient(circle at 84% 82%, rgba(255,255,255,.15), transparent 18%);
-      opacity:.95;
-    }
-
-    .flag{
-      position:absolute;
-      right:24%;
-      top:16%;
-      width:4px;
-      height:110px;
-      background:#f7f4ea;
-      box-shadow:0 6px 18px rgba(0,0,0,.15);
-    }
-
-    .flag::before{
-      content:"";
-      position:absolute;
-      top:0;
-      left:4px;
-      width:44px;
-      height:26px;
-      background:linear-gradient(135deg, #f24c4c, #c42f2f);
-      clip-path:polygon(0 0, 100% 18%, 82% 100%, 0 100%);
-    }
-
-    .ring{
-      position:absolute;
-      border-radius:50%;
-      border:1px dashed rgba(255,255,255,.3);
-    }
-
-    .ring.r1{width:210px;height:210px;left:10%;bottom:10%}
-    .ring.r2{width:140px;height:140px;right:8%;bottom:14%}
-    .ring.r3{width:88px;height:88px;left:44%;top:18%}
-
-    .section-title{
-      margin:0;
-      font-family:"Anton", sans-serif;
-      font-size:2rem;
-      letter-spacing:.05em;
-      font-weight:400;
-      text-transform:uppercase;
-    }
-
-    .sub{
-      color:var(--muted);
-      font-size:.92rem;
-      font-weight:700;
-    }
-
-    .player-list{
-      display:grid;
-      gap:12px;
-      margin-top:14px;
-    }
-
-    .player-row{
-      display:grid;
-      grid-template-columns:1fr auto;
-      gap:10px;
-      align-items:end;
-    }
-
-    .field label{
-      display:block;
-      margin-bottom:8px;
-      color:var(--muted);
-      font-size:.82rem;
-      text-transform:uppercase;
-      letter-spacing:.12em;
-      font-weight:800;
-    }
-
-    .field input,
-    .field select{
-      width:100%;
-      padding:15px 16px;
-      border-radius:16px;
-      border:1px solid rgba(22,32,21,.1);
-      background:rgba(255,255,255,.75);
-      color:var(--ink);
-      font:inherit;
-      outline:none;
-      transition:.2s ease;
-    }
-
-    .field input:focus,
-    .field select:focus{
-      border-color:rgba(45,123,70,.35);
-      box-shadow:0 0 0 4px rgba(45,123,70,.12);
-      transform:translateY(-1px);
-    }
-
-    .remove-player{
-      min-width:50px;
-      min-height:52px;
-      border-radius:16px;
-      background:linear-gradient(135deg, #b53f3f, #d56060);
-      color:white;
-      border:1px solid rgba(22,32,21,.08);
-      font-weight:900;
-    }
-
-    .setup-grid{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:14px;
-      margin-top:14px;
-    }
-
-    .actions{
-      display:flex;
-      flex-wrap:wrap;
-      gap:12px;
-      margin-top:18px;
-    }
-
-    button{
-      border:0;
-      cursor:pointer;
-      font:inherit;
-      transition:transform .18s ease, box-shadow .18s ease, background .18s ease, opacity .18s ease;
-    }
-
-    button:hover{transform:translateY(-2px)}
-    button:active{transform:translateY(0) scale(.98)}
-
-    .btn{
-      padding:14px 18px;
-      border-radius:16px;
-      border:1px solid rgba(22,32,21,.08);
-      background:rgba(255,255,255,.55);
-      color:var(--ink);
-      font-weight:800;
-    }
-
-    .btn-primary{
-      background:linear-gradient(135deg, var(--green), #3d9759);
-      color:white;
-      box-shadow:0 14px 28px rgba(45,123,70,.18);
-    }
-
-    .btn-alt{
-      background:linear-gradient(135deg, var(--sky), #9ad6ef);
-      color:#113243;
-      box-shadow:0 14px 28px rgba(120,195,230,.18);
-    }
-
-    .btn-warn{
-      background:linear-gradient(135deg, #a53b3b, #c85656);
-      color:white;
-    }
-
-    .btn-good{
-      background:linear-gradient(135deg, #2f8d58, #47a96f);
-      color:white;
-    }
-
-    .game-layout{
-      display:grid;
-      grid-template-columns:1fr .96fr;
-      gap:22px;
-      margin-top:22px;
-    }
-
-    .meta-strip{
-      display:grid;
-      grid-template-columns:repeat(5,1fr);
-      gap:12px;
-      margin-bottom:18px;
-    }
-
-    .meta{
-      padding:16px;
-      border-radius:18px;
-      background:rgba(255,255,255,.45);
-      border:1px solid rgba(22,32,21,.08);
-    }
-
-    .meta .k{
-      display:block;
-      color:var(--muted);
-      text-transform:uppercase;
-      letter-spacing:.13em;
-      font-size:.72rem;
-      font-weight:800;
-      margin-bottom:8px;
-    }
-
-    .meta .v{
-      font-family:"Anton", sans-serif;
-      font-size:2rem;
-      line-height:1;
-      letter-spacing:.04em;
-      font-weight:400;
-      text-transform:uppercase;
-    }
-
-    .hole-pill{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      min-width:70px;
-      padding:8px 12px;
-      border-radius:999px;
-      background:linear-gradient(135deg, var(--sand), #e8cb8b);
-      color:#3d3010;
-      box-shadow:0 10px 22px rgba(217,183,107,.2);
-    }
-
-    .mult-row{
-      display:grid;
-      grid-template-columns:repeat(5,1fr);
-      gap:12px;
-      margin-bottom:18px;
-    }
-
-    .mult-btn{
-      padding:16px 12px;
-      border-radius:18px;
-      background:rgba(255,255,255,.5);
-      border:1px solid rgba(22,32,21,.08);
-      font-weight:900;
-      text-transform:uppercase;
-      letter-spacing:.08em;
-      color:var(--ink);
-    }
-
-    .mult-btn.active{
-      background:linear-gradient(135deg, rgba(45,123,70,.16), rgba(45,123,70,.06));
-      border-color:rgba(45,123,70,.35);
-      box-shadow:0 10px 22px rgba(45,123,70,.10);
-    }
-
-    .target-grid{
-      display:grid;
-      grid-template-columns:repeat(5,1fr);
-      gap:12px;
-      margin-bottom:18px;
-    }
-
-    .target-btn{
-      min-height:76px;
-      border-radius:20px;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,.42)),
-        var(--panel-solid);
-      border:1px solid rgba(22,32,21,.08);
-      box-shadow:0 10px 22px rgba(35,59,28,.08);
-      font-family:"Anton", sans-serif;
-      font-size:1.95rem;
-      letter-spacing:.05em;
-      color:var(--ink);
-      position:relative;
-      overflow:hidden;
-    }
-
-    .target-btn::after{
-      content:"";
-      position:absolute;
-      inset:auto -15% -45% -15%;
-      height:100%;
-      background:radial-gradient(circle, rgba(45,123,70,.08), transparent 55%);
-      transform:translateY(24px);
-      transition:transform .2s ease;
-    }
-
-    .target-btn:hover::after{transform:translateY(10px)}
-
-    .target-btn.bull{
-      background:
-        linear-gradient(180deg, rgba(255,250,236,.82), rgba(255,255,255,.42)),
-        var(--panel-solid);
-      border-color:rgba(217,183,107,.35);
-      color:#6b531d;
-    }
-
-    .target-btn.current-hole{
-      outline:3px solid rgba(45,123,70,.25);
-      outline-offset:-3px;
-      background:
-        linear-gradient(180deg, rgba(220,245,227,.95), rgba(255,255,255,.5)),
-        var(--panel-solid);
-    }
-
-    .action-row{
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:12px;
-    }
-
-    .dart-track{
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:12px;
-      margin-bottom:18px;
-    }
-
-    .dart-slot{
-      min-height:72px;
-      border-radius:18px;
-      border:1px solid rgba(22,32,21,.08);
-      background:rgba(255,255,255,.42);
-      display:grid;
-      place-items:center;
-      text-align:center;
-      padding:10px;
-    }
-
-    .dart-slot .n{
-      display:block;
-      color:var(--muted);
-      font-size:.78rem;
-      text-transform:uppercase;
-      letter-spacing:.12em;
-      font-weight:800;
-      margin-bottom:6px;
-    }
-
-    .dart-slot .v{
-      font-family:"Anton", sans-serif;
-      font-size:1.6rem;
-      line-height:1;
-      letter-spacing:.04em;
-      font-weight:400;
-    }
-
-    .announce{
-      margin-top:18px;
-      min-height:60px;
-      padding:16px 18px;
-      border-radius:16px;
-      border:1px solid rgba(22,32,21,.08);
-      background:rgba(255,255,255,.45);
-      display:flex;
-      align-items:center;
-      font-weight:800;
-    }
-
-    .announce.good{
-      background:rgba(47,141,88,.10);
-      border-color:rgba(47,141,88,.20);
-      color:#20553a;
-    }
-
-    .announce.warn{
-      background:rgba(181,63,63,.10);
-      border-color:rgba(181,63,63,.18);
-      color:#7c2c2c;
-    }
-
-    .score-head{
-      display:flex;
-      justify-content:space-between;
-      align-items:end;
-      gap:12px;
-      margin-bottom:14px;
-    }
-
-    .table-wrap{
-      overflow:auto;
-    }
-
-    table{
-      width:100%;
-      min-width:940px;
-      border-collapse:collapse;
-    }
-
-    th, td{
-      padding:10px 8px;
-      border-bottom:1px solid rgba(22,32,21,.08);
-      border-right:1px solid rgba(22,32,21,.05);
-      text-align:center;
-      vertical-align:middle;
-      white-space:nowrap;
-    }
-
-    th:last-child, td:last-child{border-right:0}
-    th{
-      background:rgba(255,255,255,.46);
-      color:var(--muted);
-      font-size:.78rem;
-      text-transform:uppercase;
-      letter-spacing:.12em;
-      font-weight:800;
-      position:sticky;
-      top:0;
-      z-index:1;
-    }
-
-    td.name{
-      text-align:left;
-      font-weight:900;
-      min-width:160px;
-    }
-
-    td.total{
-      font-family:"Anton", sans-serif;
-      font-size:1.5rem;
-      color:var(--green-deep);
-      font-weight:400;
-    }
-
-    .hole-cell.current{
-      background:rgba(45,123,70,.08);
-      box-shadow:inset 0 0 0 2px rgba(45,123,70,.18);
-      font-weight:900;
-    }
-
-    .active-row{
-      outline:2px solid rgba(120,195,230,.45);
-      outline-offset:-2px;
-      background:rgba(120,195,230,.06);
-    }
-
-    .history-list, .leader-list{
-      display:grid;
-      gap:10px;
-      margin-top:12px;
-      max-height:540px;
-      overflow:auto;
-      padding-right:4px;
-    }
-
-    .history-item, .leader-item{
-      padding:14px;
-      border-radius:16px;
-      border:1px solid rgba(22,32,21,.08);
-      background:rgba(255,255,255,.45);
-    }
-
-    .history-top{
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap;
-      align-items:center;
-      font-weight:800;
-    }
-
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      padding:8px 10px;
-      border-radius:999px;
-      background:rgba(22,32,21,.05);
-      border:1px solid rgba(22,32,21,.08);
-      font-weight:800;
-      color:var(--muted);
-      font-size:.84rem;
-    }
-
-    .leader-item{
-      display:grid;
-      grid-template-columns:1.4fr .7fr .7fr .7fr .9fr .8fr;
-      gap:10px;
-      align-items:center;
-    }
-
-    .muted{color:var(--muted)}
 
     .reveal{
       opacity:0;
       transform:translateY(18px);
-      animation:rise .7s ease forwards;
+      animation:rise .75s ease forwards;
     }
-
     .reveal:nth-child(2){animation-delay:.08s}
     .reveal:nth-child(3){animation-delay:.16s}
     .reveal:nth-child(4){animation-delay:.24s}
-
+    .reveal:nth-child(5){animation-delay:.32s}
     @keyframes rise{
-      to{opacity:1; transform:translateY(0)}
+      to{opacity:1;transform:none}
     }
 
-    @media (max-width:1120px){
-      .layout, .game-layout, .hero{
+    .topbar{
+      display:grid;
+      grid-template-columns: 1.4fr .8fr;
+      gap:16px;
+      align-items:stretch;
+      margin-bottom:18px;
+    }
+
+    .hero, .summary{
+      position:relative;
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(10px);
+    }
+
+    .hero::before,
+    .summary::before,
+    .panel::before,
+    .modal-card::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background:
+        linear-gradient(90deg, transparent 0 96%, rgba(255,255,255,.035) 96% 100%),
+        linear-gradient(transparent 0 96%, rgba(255,255,255,.035) 96% 100%);
+      background-size:26px 26px;
+      mask-image:linear-gradient(180deg, rgba(255,255,255,.7), transparent 75%);
+      opacity:.35;
+    }
+
+    .hero{
+      padding:28px;
+      min-height:190px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+    }
+
+    .eyebrow{
+      display:inline-flex;
+      gap:10px;
+      align-items:center;
+      color:var(--accent);
+      font-size:.84rem;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      font-weight:700;
+    }
+
+    .eyebrow::before{
+      content:"";
+      width:10px;height:10px;border-radius:50%;
+      background:var(--accent);
+      box-shadow:0 0 18px rgba(122,240,181,.7);
+    }
+
+    h1,h2,h3,h4{
+      margin:0;
+      line-height:.95;
+      font-family:"Bebas Neue", sans-serif;
+      letter-spacing:.03em;
+      font-weight:400;
+    }
+
+    .hero h1{
+      font-size:clamp(3rem, 8vw, 6.8rem);
+      margin-top:10px;
+    }
+    .hero p{
+      max-width:64ch;
+      color:var(--muted);
+      margin:0;
+      font-size:1rem;
+    }
+
+    .summary{
+      padding:22px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+
+    .metric{
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01));
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:16px 14px;
+    }
+    .metric-label{
+      color:var(--muted);
+      font-size:.84rem;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      margin-bottom:8px;
+    }
+    .metric-value{
+      font-size:clamp(1.4rem, 3vw, 2.1rem);
+      font-weight:700;
+    }
+
+    .main-grid{
+      display:grid;
+      grid-template-columns: 360px minmax(0,1fr);
+      gap:18px;
+    }
+
+    .panel{
+      position:relative;
+      background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.02));
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:18px;
+      overflow:hidden;
+      backdrop-filter: blur(12px);
+    }
+
+    .panel-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:12px;
+      margin-bottom:16px;
+    }
+    .panel-header h2{
+      font-size:2rem;
+    }
+    .sub{
+      color:var(--muted);
+      font-size:.92rem;
+    }
+
+    .stack{display:grid; gap:14px}
+    .player-inputs{display:grid; gap:10px}
+    .player-row{
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap:10px;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    input[type="number"],
+    select{
+      width:100%;
+      background:rgba(11,16,22,.75);
+      color:var(--text);
+      border:1px solid var(--line-strong);
+      border-radius:14px;
+      padding:13px 14px;
+      outline:none;
+      transition:.2s ease;
+    }
+    input:focus, select:focus{
+      border-color:var(--accent);
+      box-shadow:0 0 0 3px rgba(122,240,181,.14);
+    }
+
+    .btn{
+      border:1px solid var(--line-strong);
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      color:var(--text);
+      padding:12px 14px;
+      border-radius:14px;
+      cursor:pointer;
+      transition:transform .16s ease, border-color .16s ease, background .16s ease, box-shadow .16s ease;
+      font-weight:700;
+    }
+    .btn:hover{
+      transform:translateY(-2px);
+      border-color:rgba(255,255,255,.28);
+      box-shadow:0 10px 24px rgba(0,0,0,.25);
+    }
+    .btn:active{transform:translateY(0) scale(.98)}
+    .btn.accent{
+      background:linear-gradient(180deg, rgba(122,240,181,.22), rgba(122,240,181,.08));
+      border-color:rgba(122,240,181,.45);
+    }
+    .btn.gold{
+      background:linear-gradient(180deg, rgba(255,214,107,.18), rgba(255,214,107,.08));
+      border-color:rgba(255,214,107,.4);
+    }
+    .btn.danger{
+      background:linear-gradient(180deg, rgba(255,111,125,.18), rgba(255,111,125,.08));
+      border-color:rgba(255,111,125,.35);
+    }
+    .btn.blue{
+      background:linear-gradient(180deg, rgba(127,196,255,.18), rgba(127,196,255,.08));
+      border-color:rgba(127,196,255,.35);
+    }
+    .btn.small{padding:9px 10px;border-radius:12px;font-size:.92rem}
+    .btn.tiny{padding:8px 10px;border-radius:10px;font-size:.82rem}
+
+    .button-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+    }
+
+    .control-grid{
+      display:grid;
+      gap:12px;
+    }
+
+    .target-grid{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0,1fr));
+      gap:10px;
+    }
+    .target-btn{
+      min-height:58px;
+      font-size:1rem;
+    }
+    .target-btn.active{
+      border-color:var(--accent);
+      box-shadow:0 0 0 2px rgba(122,240,181,.16) inset;
+    }
+
+    .multiplier-grid{
+      display:grid;
+      grid-template-columns:repeat(5, minmax(0,1fr));
+      gap:10px;
+    }
+    .action-grid{
+      display:grid;
+      grid-template-columns:repeat(3, minmax(0,1fr));
+      gap:10px;
+    }
+
+    .status-box{
+      display:grid;
+      gap:10px;
+      padding:14px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:rgba(255,255,255,.025);
+    }
+    .status-line{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      color:var(--muted);
+      font-size:.95rem;
+    }
+    .status-line strong{color:var(--text)}
+
+    .scoreboard-wrap{
+      overflow:auto;
+      border-radius:20px;
+      border:1px solid var(--line);
+      background:rgba(9,14,20,.6);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:900px;
+    }
+    thead th{
+      position:sticky;
+      top:0;
+      background:linear-gradient(180deg, rgba(19,29,41,.98), rgba(16,24,34,.98));
+      z-index:1;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:var(--muted);
+      font-size:.78rem;
+    }
+    th,td{
+      padding:12px 10px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      text-align:center;
+      vertical-align:middle;
+    }
+    th:first-child, td:first-child{
+      position:sticky;
+      left:0;
+      background:linear-gradient(180deg, rgba(19,29,41,.98), rgba(16,24,34,.98));
+      z-index:2;
+      text-align:left;
+      min-width:160px;
+    }
+    tbody tr:nth-child(even) td{
+      background:rgba(255,255,255,.015);
+    }
+    .player-name{
+      display:flex;
+      flex-direction:column;
+      gap:3px;
+    }
+    .player-name strong{
+      font-size:1rem;
+    }
+    .mini{
+      font-size:.8rem;
+      color:var(--muted);
+    }
+
+    .marks{
+      display:flex;
+      justify-content:center;
+      gap:5px;
+      min-width:82px;
+    }
+    .mark{
+      width:16px;height:16px;
+      border-radius:999px;
+      border:1px solid var(--line-strong);
+      background:rgba(255,255,255,.03);
+      position:relative;
+      overflow:hidden;
+    }
+    .mark.filled{
+      background:linear-gradient(180deg, rgba(122,240,181,.9), rgba(122,240,181,.48));
+      border-color:rgba(122,240,181,.8);
+      box-shadow:0 0 14px rgba(122,240,181,.28);
+    }
+    .mark.extra{
+      background:linear-gradient(180deg, rgba(247,185,85,.95), rgba(247,185,85,.5));
+      border-color:rgba(247,185,85,.85);
+      box-shadow:0 0 14px rgba(247,185,85,.25);
+    }
+
+    .player-turn{
+      outline:2px solid rgba(122,240,181,.32);
+      outline-offset:-2px;
+    }
+
+    .winner-banner{
+      display:none;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      padding:16px 18px;
+      border-radius:18px;
+      border:1px solid rgba(255,214,107,.3);
+      background:linear-gradient(180deg, rgba(255,214,107,.12), rgba(255,214,107,.05));
+      margin-bottom:14px;
+    }
+    .winner-banner.show{display:flex}
+    .winner-banner h3{font-size:1.8rem}
+    .winner-banner p{margin:0;color:var(--muted)}
+
+    .history-list{
+      display:grid;
+      gap:10px;
+      max-height:280px;
+      overflow:auto;
+      padding-right:4px;
+    }
+    .history-item{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px;
+      background:rgba(255,255,255,.02);
+      display:grid;
+      gap:8px;
+    }
+    .history-top{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:flex-start;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:6px 10px;
+      color:var(--muted);
+      font-size:.8rem;
+      width:max-content;
+      background:rgba(255,255,255,.025);
+    }
+
+    .empty{
+      color:var(--muted);
+      border:1px dashed var(--line-strong);
+      border-radius:16px;
+      padding:16px;
+      text-align:center;
+    }
+
+    .modal{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(4,8,12,.64);
+      backdrop-filter: blur(10px);
+      padding:20px;
+      z-index:50;
+    }
+    .modal.show{display:flex}
+    .modal-card{
+      position:relative;
+      width:min(1100px, 100%);
+      max-height:88vh;
+      overflow:auto;
+      background:linear-gradient(180deg, rgba(18,25,34,.96), rgba(12,18,26,.98));
+      border:1px solid var(--line);
+      border-radius:28px;
+      box-shadow:var(--shadow);
+      padding:22px;
+    }
+    .modal-top{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom:16px;
+    }
+    .leaderboard-table{
+      min-width:760px;
+    }
+
+    .calendar-grid{
+      display:grid;
+      grid-template-columns:1.15fr .85fr;
+      gap:14px;
+      align-items:start;
+    }
+    .calendar-form{
+      display:grid;
+      gap:12px;
+      padding:14px;
+      border-radius:18px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.025);
+    }
+    .field-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+
+    .footer-note{
+      margin-top:12px;
+      color:var(--muted);
+      font-size:.84rem;
+    }
+
+    @media (max-width: 1080px){
+      .topbar, .main-grid, .calendar-grid{
         grid-template-columns:1fr;
       }
-      .hero-visual{
-        min-height:340px;
-        border-left:0;
-        border-top:1px solid rgba(22,32,21,.08);
-      }
-    }
-
-    @media (max-width:760px){
-      .topbar{
-        flex-direction:column;
-        align-items:flex-start;
-      }
-      .setup-grid,
-      .meta-strip,
-      .mult-row,
-      .action-row{
-        grid-template-columns:1fr 1fr;
-      }
-      .target-grid{
+      .summary{
         grid-template-columns:repeat(4,1fr);
       }
-      .leader-item{
-        grid-template-columns:1fr 1fr;
-      }
     }
 
-    @media (max-width:560px){
-      .setup-grid,
-      .meta-strip,
-      .mult-row,
-      .action-row{
-        grid-template-columns:1fr;
-      }
-      .target-grid{
-        grid-template-columns:repeat(3,1fr);
-      }
-      .player-row{
-        grid-template-columns:1fr;
-      }
-      .dart-track{
-        grid-template-columns:1fr;
-      }
+    @media (max-width: 760px){
+      .app{width:min(100% - 14px, var(--max));}
+      .hero{padding:22px}
+      .panel{padding:14px}
+      .summary{grid-template-columns:1fr 1fr}
+      .target-grid{grid-template-columns:repeat(3, minmax(0,1fr))}
+      .multiplier-grid{grid-template-columns:repeat(3, minmax(0,1fr))}
+      .action-grid{grid-template-columns:1fr}
+      .field-grid{grid-template-columns:1fr}
+      .winner-banner{flex-direction:column;align-items:flex-start}
     }
   </style>
 </head>
 <body>
-  <div class="shell">
-    <header class="topbar reveal">
-      <div class="brand">
-        <div class="badge" aria-hidden="true"></div>
-        <div class="brand-copy">
-          <h1>Golf Darts</h1>
-          <p>Hit the current hole only, throw three darts, and keep the lowest score possible. Best dart on each hole wins the hole for your scorecard.</p>
+  <div class="app">
+    <section class="topbar">
+      <div class="hero reveal">
+        <div class="eyebrow">Cricket Darts Webapp</div>
+        <h1>Tactics</h1>
+        <p>
+          Track live cricket games for targets 10–20 and Bull, rotate turns every 3 darts, save game history,
+          and build a persistent leaderboard with wins, losses, ties, win percentage, Elo, and points per round.
+        </p>
+      </div>
+
+      <div class="summary reveal" aria-label="game summary">
+        <div class="metric">
+          <div class="metric-label">Current Round</div>
+          <div class="metric-value" id="metricRound">1</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Current Player</div>
+          <div class="metric-value" id="metricPlayer">—</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Darts In Turn</div>
+          <div class="metric-value" id="metricDarts">0 / 3</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Games Saved</div>
+          <div class="metric-value" id="metricGamesSaved">0</div>
         </div>
       </div>
-      <div class="header-actions">
-        <button class="btn btn-alt" id="leaderboardToggle">Leaderboard</button>
-        <button class="btn" id="historyToggle">History</button>
-      </div>
-    </header>
+    </section>
 
-    <main class="layout">
-      <section class="panel reveal" id="setupPanel">
-        <div class="hero">
-          <div class="hero-copy">
+    <section class="main-grid">
+      <aside class="stack">
+        <div class="panel reveal">
+          <div class="panel-header">
             <div>
-              <span class="eyebrow">Lowest Score Wins</span>
-              <h2>Play the course, not the crowd.</h2>
-            </div>
-
-            <div class="rule-stack">
-              <div class="rule"><strong>9 holes:</strong> targets <strong>1–9</strong>. <strong>18 holes:</strong> targets <strong>1–18</strong>.</div>
-              <div class="rule"><strong>Each hole = 3 darts.</strong> The app scores the <strong>best hit only</strong> from those three darts.</div>
-              <div class="rule"><strong>Double = 1</strong> (hole in one), <strong>Triple = 2</strong> (eagle), <strong>Inner Single = 3</strong> (birdie), <strong>Outer Single = 4</strong> (par), <strong>Miss = 5</strong> (bogey).</div>
-              <div class="rule"><strong>Wrong number or bull</strong> counts as a miss for that dart unless bull is the current hole, which it never is in 9 or 18 hole mode.</div>
-            </div>
-
-            <div class="panel" style="background:rgba(255,255,255,.3)">
-              <div class="panel-inner">
-                <h3 class="section-title">Start Match</h3>
-
-                <div class="player-list" id="playerList"></div>
-
-                <div class="setup-grid">
-                  <div class="field">
-                    <label for="gameMode">Game Mode</label>
-                    <select id="gameMode">
-                      <option value="9">9 Holes</option>
-                      <option value="18">18 Holes</option>
-                    </select>
-                  </div>
-                  <div class="field">
-                    <label for="matchDate">Match Date</label>
-                    <input id="matchDate" type="date" />
-                  </div>
-                </div>
-
-                <div class="actions">
-                  <button class="btn btn-alt" id="addPlayerBtn" type="button">Add Player</button>
-                  <button class="btn btn-primary" id="startGameBtn">Start Game</button>
-                </div>
-              </div>
+              <h2>Players</h2>
+              <div class="sub">Add any number of players and start a new match.</div>
             </div>
           </div>
 
-          <div class="hero-visual" aria-hidden="true">
-            <div class="course">
-              <div class="flag"></div>
-              <div class="ring r1"></div>
-              <div class="ring r2"></div>
-              <div class="ring r3"></div>
+          <div class="player-inputs" id="playerInputs"></div>
+
+          <div class="button-row">
+            <button class="btn small" id="addPlayerBtn" type="button">+ Add Player</button>
+            <button class="btn accent" id="startGameBtn" type="button">Start New Game</button>
+          </div>
+
+          <div class="footer-note">
+            Winner: a player who has closed all targets and has the most points. If multiple players meet that condition with the same top score, it is a tie.
+          </div>
+        </div>
+
+        <div class="panel reveal">
+          <div class="panel-header">
+            <div>
+              <h2>Throw Controls</h2>
+              <div class="sub">Select a target, then a multiplier. Miss records a zero-value dart.</div>
+            </div>
+          </div>
+
+          <div class="control-grid">
+            <div>
+              <div class="sub" style="margin-bottom:8px;">Targets</div>
+              <div class="target-grid" id="targetGrid"></div>
+            </div>
+
+            <div>
+              <div class="sub" style="margin-bottom:8px;">Multiplier</div>
+              <div class="multiplier-grid">
+                <button class="btn target-btn blue mult-btn" data-mult="1" type="button">Single</button>
+                <button class="btn target-btn blue mult-btn" data-mult="2" type="button">Double</button>
+                <button class="btn target-btn blue mult-btn" data-mult="3" type="button">Triple</button>
+                <button class="btn target-btn" id="missBtn" type="button">Miss</button>
+                <button class="btn target-btn danger" id="undoBtn" type="button">Undo</button>
+              </div>
+            </div>
+
+            <div class="status-box">
+              <div class="status-line"><span>Selected target</span><strong id="selectedTargetLabel">None</strong></div>
+              <div class="status-line"><span>Current turn</span><strong id="currentTurnLabel">—</strong></div>
+              <div class="status-line"><span>Turn darts</span><strong id="currentTurnDartsLabel">0 / 3</strong></div>
+              <div class="status-line"><span>Last action</span><strong id="lastActionLabel">—</strong></div>
+            </div>
+
+            <div class="action-grid">
+              <button class="btn gold" id="leaderboardBtn" type="button">Leaderboard</button>
+              <button class="btn" id="calendarBtn" type="button">Game History / Calendar</button>
+              <button class="btn danger" id="resetCurrentBtn" type="button">Reset Current Game</button>
             </div>
           </div>
         </div>
-      </section>
 
-      <aside class="panel reveal">
-        <div class="panel-inner">
-          <div id="historyPanel">
-            <div class="score-head">
-              <div>
-                <h3 class="section-title">Match History</h3>
-                <div class="sub">Stored in local storage</div>
-              </div>
+        <div class="panel reveal">
+          <div class="panel-header">
+            <div>
+              <h2>Saved Games</h2>
+              <div class="sub">Recent results stored locally on this device.</div>
             </div>
-            <div class="history-list" id="historyList"></div>
           </div>
-
-          <div id="leaderboardPanel" class="hidden">
-            <div class="score-head">
-              <div>
-                <h3 class="section-title">Leaderboard</h3>
-                <div class="sub">Wins, losses, ties, win%, ELO</div>
-              </div>
-            </div>
-            <div class="leader-list" id="leaderboardList"></div>
-          </div>
+          <div class="history-list" id="recentGames"></div>
         </div>
       </aside>
-    </main>
 
-    <section class="game-layout hidden" id="gameArea">
-      <section class="panel reveal">
-        <div class="panel-inner">
-          <div class="meta-strip">
-            <div class="meta">
-              <span class="k">Current Player</span>
-              <span class="v" id="currentPlayerLabel">Player 1</span>
-            </div>
-            <div class="meta">
-              <span class="k">Game</span>
-              <span class="v" id="modeLabel">9 Holes</span>
-            </div>
-            <div class="meta">
-              <span class="k">Hole</span>
-              <span class="v"><span class="hole-pill" id="holeLabel">1</span></span>
-            </div>
-            <div class="meta">
-              <span class="k">Dart</span>
-              <span class="v" id="dartLabel">1 / 3</span>
-            </div>
-            <div class="meta">
-              <span class="k">Selected</span>
-              <span class="v" id="multLabel">Outer</span>
-            </div>
+      <main class="stack">
+        <div class="winner-banner reveal" id="winnerBanner" role="status" aria-live="polite">
+          <div>
+            <h3 id="winnerTitle">Game Complete</h3>
+            <p id="winnerText">Result details will appear here.</p>
           </div>
-
-          <div class="dart-track" id="dartTrack">
-            <div class="dart-slot"><div><span class="n">Dart 1</span><span class="v" id="dart1View">—</span></div></div>
-            <div class="dart-slot"><div><span class="n">Dart 2</span><span class="v" id="dart2View">—</span></div></div>
-            <div class="dart-slot"><div><span class="n">Dart 3</span><span class="v" id="dart3View">—</span></div></div>
+          <div class="button-row">
+            <button class="btn accent" id="saveFinishedGameBtn" type="button">Save Result</button>
+            <button class="btn" id="newGameQuickBtn" type="button">New Game</button>
           </div>
-
-          <div class="mult-row" role="group" aria-label="Shot type">
-            <button class="mult-btn active" data-shot="outer">Outer Single</button>
-            <button class="mult-btn" data-shot="inner">Inner Single</button>
-            <button class="mult-btn" data-shot="double">Double</button>
-            <button class="mult-btn" data-shot="triple">Triple</button>
-            <button class="mult-btn btn-warn" id="missBtn">Miss</button>
-          </div>
-
-          <div class="target-grid" id="targetGrid" aria-label="Target buttons"></div>
-
-          <div class="action-row">
-            <button class="btn" id="undoBtn">Undo</button>
-            <button class="btn btn-good" id="finishHoleBtn">End Turn</button>
-            <button class="btn btn-warn" id="newGameBtn">New Game</button>
-          </div>
-
-          <div class="announce" id="announcement">Add players and start your round.</div>
         </div>
-      </section>
 
-      <aside class="panel reveal">
-        <div class="panel-inner">
-          <div class="score-head">
+        <div class="panel reveal">
+          <div class="panel-header">
             <div>
-              <h3 class="section-title">Scorecard</h3>
-              <div class="sub">Current hole highlighted • lowest total wins</div>
+              <h2>Scoreboard</h2>
+              <div class="sub">Marks close targets at 3 hits. Extra marks score only if opponents are still open.</div>
             </div>
           </div>
-          <div class="table-wrap">
-            <table aria-label="Golf Darts scorecard">
-              <thead id="scoreHead"></thead>
-              <tbody id="scoreBody"></tbody>
+
+          <div class="scoreboard-wrap">
+            <table aria-label="Tactics scoreboard" id="scoreboardTable">
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>10</th>
+                  <th>11</th>
+                  <th>12</th>
+                  <th>13</th>
+                  <th>14</th>
+                  <th>15</th>
+                  <th>16</th>
+                  <th>17</th>
+                  <th>18</th>
+                  <th>19</th>
+                  <th>20</th>
+                  <th>Bull</th>
+                  <th>Score</th>
+                  <th>Closed</th>
+                  <th>PPR</th>
+                </tr>
+              </thead>
+              <tbody id="scoreboardBody"></tbody>
             </table>
           </div>
         </div>
-      </aside>
+      </main>
     </section>
   </div>
 
+  <div class="modal" id="leaderboardModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-top">
+        <div>
+          <div class="eyebrow">Persistent Rankings</div>
+          <h2 style="font-size:3rem;">Leaderboard</h2>
+          <div class="sub">Ranked by Elo rating. Stats are based on all saved games in local storage.</div>
+        </div>
+        <button class="btn" id="closeLeaderboardBtn" type="button">Close</button>
+      </div>
+
+      <div class="scoreboard-wrap">
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Player</th>
+              <th>Elo</th>
+              <th>W</th>
+              <th>L</th>
+              <th>T</th>
+              <th>Win %</th>
+              <th>PPR</th>
+              <th>Games</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="calendarModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-top">
+        <div>
+          <div class="eyebrow">Backfill Results</div>
+          <h2 style="font-size:3rem;">Game History / Calendar</h2>
+          <div class="sub">Enter previously played games with date, participants, scores, and winner/tie.</div>
+        </div>
+        <button class="btn" id="closeCalendarBtn" type="button">Close</button>
+      </div>
+
+      <div class="calendar-grid">
+        <div class="calendar-form">
+          <div class="field-grid">
+            <div>
+              <label class="sub" for="historyDate">Game date</label>
+              <input id="historyDate" type="date" />
+            </div>
+            <div>
+              <label class="sub" for="historyPlayers">Players (comma separated)</label>
+              <input id="historyPlayers" type="text" placeholder="Alex, Jamie, Sam" />
+            </div>
+          </div>
+
+          <div>
+            <label class="sub" for="historyScores">Scores (match player order, comma separated)</label>
+            <input id="historyScores" type="text" placeholder="120, 85, 120" />
+          </div>
+
+          <div>
+            <label class="sub" for="historyRounds">Rounds played</label>
+            <input id="historyRounds" type="number" min="1" value="10" />
+          </div>
+
+          <div>
+            <label class="sub" for="historyResult">Result</label>
+            <select id="historyResult">
+              <option value="winner">Winner</option>
+              <option value="tie">Tie</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="sub" for="historyWinner">Winner name(s) if applicable, comma separated for tie</label>
+            <input id="historyWinner" type="text" placeholder="Alex" />
+          </div>
+
+          <div class="button-row">
+            <button class="btn accent" id="saveHistoryGameBtn" type="button">Save Historical Game</button>
+          </div>
+
+          <div class="footer-note">
+            Historical entries update the leaderboard and local history, including Elo and points-per-round.
+          </div>
+        </div>
+
+        <div class="panel" style="padding:14px;">
+          <div class="panel-header">
+            <div>
+              <h2 style="font-size:2rem;">All Saved Games</h2>
+              <div class="sub">Stored locally by date.</div>
+            </div>
+          </div>
+          <div class="history-list" id="allGamesList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
+    const TARGETS = ["10","11","12","13","14","15","16","17","18","19","20","Bull"];
     const STORAGE_KEYS = {
-      history: "golf_darts_history_v1",
-      leaderboard: "golf_darts_leaderboard_v1"
-    };
-
-    const SHOT_POINTS = {
-      double: 1,
-      triple: 2,
-      inner: 3,
-      outer: 4,
-      miss: 5
-    };
-
-    const SHOT_LABELS = {
-      double: "Double",
-      triple: "Triple",
-      inner: "Inner",
-      outer: "Outer",
-      miss: "Miss"
+      games: "tactics_saved_games_v1",
+      leaderboard: "tactics_leaderboard_v1",
+      current: "tactics_current_game_v1"
     };
 
     const state = {
       players: [],
-      totalHoles: 9,
-      currentPlayer: 0,
-      currentHole: 1,
-      currentDart: 1,
-      selectedShot: "outer",
-      dartsThisTurn: [],
-      started: false,
+      currentPlayerIndex: 0,
+      dartsInTurn: 0,
+      totalDarts: 0,
+      round: 1,
+      selectedTarget: null,
       gameOver: false,
-      historyStack: []
+      winnerNames: [],
+      history: [],
+      savedGamePending: false
     };
 
-    const el = {
-      playerList: document.getElementById("playerList"),
+    const els = {
+      playerInputs: document.getElementById("playerInputs"),
       addPlayerBtn: document.getElementById("addPlayerBtn"),
       startGameBtn: document.getElementById("startGameBtn"),
-      gameMode: document.getElementById("gameMode"),
-      matchDate: document.getElementById("matchDate"),
-      gameArea: document.getElementById("gameArea"),
-      currentPlayerLabel: document.getElementById("currentPlayerLabel"),
-      modeLabel: document.getElementById("modeLabel"),
-      holeLabel: document.getElementById("holeLabel"),
-      dartLabel: document.getElementById("dartLabel"),
-      multLabel: document.getElementById("multLabel"),
-      dart1View: document.getElementById("dart1View"),
-      dart2View: document.getElementById("dart2View"),
-      dart3View: document.getElementById("dart3View"),
       targetGrid: document.getElementById("targetGrid"),
+      scoreboardBody: document.getElementById("scoreboardBody"),
+      selectedTargetLabel: document.getElementById("selectedTargetLabel"),
+      currentTurnLabel: document.getElementById("currentTurnLabel"),
+      currentTurnDartsLabel: document.getElementById("currentTurnDartsLabel"),
+      lastActionLabel: document.getElementById("lastActionLabel"),
+      metricRound: document.getElementById("metricRound"),
+      metricPlayer: document.getElementById("metricPlayer"),
+      metricDarts: document.getElementById("metricDarts"),
+      metricGamesSaved: document.getElementById("metricGamesSaved"),
       missBtn: document.getElementById("missBtn"),
       undoBtn: document.getElementById("undoBtn"),
-      finishHoleBtn: document.getElementById("finishHoleBtn"),
-      newGameBtn: document.getElementById("newGameBtn"),
-      announcement: document.getElementById("announcement"),
-      scoreHead: document.getElementById("scoreHead"),
-      scoreBody: document.getElementById("scoreBody"),
-      historyList: document.getElementById("historyList"),
-      leaderboardList: document.getElementById("leaderboardList"),
-      historyPanel: document.getElementById("historyPanel"),
-      leaderboardPanel: document.getElementById("leaderboardPanel"),
-      leaderboardToggle: document.getElementById("leaderboardToggle"),
-      historyToggle: document.getElementById("historyToggle"),
-      shotButtons: () => [...document.querySelectorAll("[data-shot]")]
+      leaderboardBtn: document.getElementById("leaderboardBtn"),
+      calendarBtn: document.getElementById("calendarBtn"),
+      resetCurrentBtn: document.getElementById("resetCurrentBtn"),
+      recentGames: document.getElementById("recentGames"),
+      winnerBanner: document.getElementById("winnerBanner"),
+      winnerTitle: document.getElementById("winnerTitle"),
+      winnerText: document.getElementById("winnerText"),
+      saveFinishedGameBtn: document.getElementById("saveFinishedGameBtn"),
+      newGameQuickBtn: document.getElementById("newGameQuickBtn"),
+      leaderboardModal: document.getElementById("leaderboardModal"),
+      closeLeaderboardBtn: document.getElementById("closeLeaderboardBtn"),
+      leaderboardBody: document.getElementById("leaderboardBody"),
+      calendarModal: document.getElementById("calendarModal"),
+      closeCalendarBtn: document.getElementById("closeCalendarBtn"),
+      allGamesList: document.getElementById("allGamesList"),
+      historyDate: document.getElementById("historyDate"),
+      historyPlayers: document.getElementById("historyPlayers"),
+      historyScores: document.getElementById("historyScores"),
+      historyRounds: document.getElementById("historyRounds"),
+      historyResult: document.getElementById("historyResult"),
+      historyWinner: document.getElementById("historyWinner"),
+      saveHistoryGameBtn: document.getElementById("saveHistoryGameBtn")
     };
 
-    function todayStr() {
-      const d = new Date();
-      const offset = d.getTimezoneOffset();
-      const local = new Date(d.getTime() - offset * 60000);
-      return local.toISOString().slice(0, 10);
-    }
-
-    function getStorage(key, fallback) {
-      try {
-        return JSON.parse(localStorage.getItem(key)) ?? fallback;
-      } catch {
-        return fallback;
-      }
-    }
-
-    function setStorage(key, value) {
-      localStorage.setItem(key, JSON.stringify(value));
-    }
-
-    function deepClone(obj) {
-      return JSON.parse(JSON.stringify(obj));
-    }
-
-    function createPlayer(name) {
-      return {
-        name,
-        scores: [],
-        dartLog: [],
-        total: 0
-      };
-    }
-
-    function addPlayerField(value = "") {
-      const count = el.playerList.querySelectorAll(".player-row").length + 1;
+    function createPlayerInput(value = "") {
       const row = document.createElement("div");
       row.className = "player-row";
       row.innerHTML = `
-        <div class="field">
-          <label>Player ${count}</label>
-          <input type="text" maxlength="28" placeholder="Enter player name" value="${value.replace(/"/g, "&quot;")}">
-        </div>
-        <button class="remove-player" type="button" aria-label="Remove player">×</button>
+        <input type="text" class="player-name-input" placeholder="Player name" value="${escapeHtml(value)}" />
+        <button class="btn small danger remove-player" type="button" aria-label="Remove player">Remove</button>
       `;
-
-      const removeBtn = row.querySelector(".remove-player");
-      removeBtn.addEventListener("click", () => {
-        if (el.playerList.querySelectorAll(".player-row").length <= 2) return;
-        row.remove();
-        refreshPlayerLabels();
+      row.querySelector(".remove-player").addEventListener("click", () => {
+        if (els.playerInputs.children.length > 2) row.remove();
       });
-
-      const input = row.querySelector("input");
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") startGame();
-      });
-
-      el.playerList.appendChild(row);
-      refreshPlayerLabels();
+      els.playerInputs.appendChild(row);
     }
 
-    function refreshPlayerLabels() {
-      const rows = [...el.playerList.querySelectorAll(".player-row")];
-      rows.forEach((row, idx) => {
-        row.querySelector("label").textContent = `Player ${idx + 1}`;
-      });
-      rows.forEach(row => {
-        row.querySelector(".remove-player").style.visibility = rows.length <= 2 ? "hidden" : "visible";
+    function initPlayerInputs() {
+      els.playerInputs.innerHTML = "";
+      createPlayerInput("Player 1");
+      createPlayerInput("Player 2");
+    }
+
+    function buildTargetButtons() {
+      els.targetGrid.innerHTML = "";
+      TARGETS.forEach(target => {
+        const btn = document.createElement("button");
+        btn.className = "btn target-btn";
+        btn.type = "button";
+        btn.textContent = target;
+        btn.dataset.target = target;
+        btn.addEventListener("click", () => {
+          state.selectedTarget = target;
+          updateSelectedTargetUI();
+        });
+        els.targetGrid.appendChild(btn);
       });
     }
 
-    function getPlayerNames() {
-      return [...el.playerList.querySelectorAll("input")]
-        .map(input => input.value.trim())
+    function updateSelectedTargetUI() {
+      [...els.targetGrid.querySelectorAll(".target-btn")].forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.target === state.selectedTarget);
+      });
+      els.selectedTargetLabel.textContent = state.selectedTarget || "None";
+    }
+
+    function getPlayerNamesFromInputs() {
+      return [...document.querySelectorAll(".player-name-input")]
+        .map(i => i.value.trim())
         .filter(Boolean);
     }
 
-    function buildTargetGrid() {
-      el.targetGrid.innerHTML = "";
-      for (let i = 1; i <= 20; i++) {
-        const btn = document.createElement("button");
-        btn.className = "target-btn";
-        btn.textContent = i;
-        btn.dataset.target = i;
-        btn.addEventListener("click", () => recordThrow(i));
-        el.targetGrid.appendChild(btn);
+    function freshPlayer(name) {
+      const marks = {};
+      TARGETS.forEach(t => marks[t] = 0);
+      return {
+        name,
+        marks,
+        score: 0,
+        dartsThrown: 0,
+        throwLog: []
+      };
+    }
+
+    function startGame(names) {
+      if (!names || names.length < 2) {
+        alert("Please enter at least 2 player names.");
+        return;
+      }
+      const unique = [...new Set(names.map(n => n.trim()).filter(Boolean))];
+      if (unique.length < 2) {
+        alert("Please enter at least 2 unique player names.");
+        return;
       }
 
-      const bull = document.createElement("button");
-      bull.className = "target-btn bull";
-      bull.textContent = "Bull";
-      bull.dataset.target = "BULL";
-      bull.addEventListener("click", () => recordThrow("BULL"));
-      el.targetGrid.appendChild(bull);
+      state.players = unique.map(freshPlayer);
+      state.currentPlayerIndex = 0;
+      state.dartsInTurn = 0;
+      state.totalDarts = 0;
+      state.round = 1;
+      state.selectedTarget = null;
+      state.gameOver = false;
+      state.winnerNames = [];
+      state.savedGamePending = false;
+      els.lastActionLabel.textContent = "New game started";
+      els.winnerBanner.classList.remove("show");
+      renderAll();
+      persistCurrentGame();
     }
 
-    function saveSnapshot() {
-      state.historyStack.push(deepClone({
-        players: state.players,
-        totalHoles: state.totalHoles,
-        currentPlayer: state.currentPlayer,
-        currentHole: state.currentHole,
-        currentDart: state.currentDart,
-        selectedShot: state.selectedShot,
-        dartsThisTurn: state.dartsThisTurn,
-        started: state.started,
-        gameOver: state.gameOver
-      }));
+    function marksClosedCount(player) {
+      return TARGETS.filter(t => player.marks[t] >= 3).length;
     }
 
-    function setAnnouncement(msg, type = "") {
-      el.announcement.textContent = msg;
-      el.announcement.className = "announce" + (type ? ` ${type}` : "");
+    function isClosed(player) {
+      return TARGETS.every(t => player.marks[t] >= 3);
     }
 
-    function updateMeta() {
-      if (!state.players.length) return;
+    function currentPlayer() {
+      return state.players[state.currentPlayerIndex];
+    }
 
-      el.currentPlayerLabel.textContent = state.players[state.currentPlayer]?.name ?? "—";
-      el.modeLabel.textContent = `${state.totalHoles} Holes`;
-      el.holeLabel.textContent = state.currentHole;
-      el.dartLabel.textContent = `${state.currentDart} / 3`;
-      el.multLabel.textContent = SHOT_LABELS[state.selectedShot];
+    function activeOpponentsOpen(target, playerIndex) {
+      return state.players.some((p, idx) => idx !== playerIndex && p.marks[target] < 3);
+    }
 
-      const dartViews = [el.dart1View, el.dart2View, el.dart3View];
-      dartViews.forEach((node, idx) => {
-        const dart = state.dartsThisTurn[idx];
-        node.textContent = dart ? `${dart.label}` : "—";
-      });
+    function applyThrow(target, multiplier) {
+      if (state.gameOver) return;
+      if (!state.players.length) {
+        alert("Start a game first.");
+        return;
+      }
 
-      el.shotButtons().forEach(btn => {
-        btn.classList.toggle("active", btn.dataset.shot === state.selectedShot);
-      });
+      const player = currentPlayer();
+      const snapshot = getSerializableCurrentState();
 
-      [...el.targetGrid.querySelectorAll(".target-btn")].forEach(btn => {
-        const target = btn.dataset.target;
-        const hole = String(state.currentHole);
-        btn.classList.toggle("current-hole", target === hole);
-      });
+      if (target === "MISS") {
+        player.dartsThrown += 1;
+        player.throwLog.push({ target: "MISS", mult: 0, points: 0 });
+        advanceDart("Miss");
+        pushUndoSnapshot(snapshot);
+        return;
+      }
 
-      el.undoBtn.disabled = !state.historyStack.length;
+      const hits = Number(multiplier);
+      const targetValue = target === "Bull" ? 25 : Number(target);
+      const current = player.marks[target];
+      const newTotal = current + hits;
+      let scoringHits = 0;
+
+      if (current < 3) {
+        if (newTotal > 3) scoringHits = newTotal - 3;
+        player.marks[target] = Math.min(3, newTotal);
+      } else {
+        scoringHits = hits;
+      }
+
+      let points = 0;
+      if (scoringHits > 0 && activeOpponentsOpen(target, state.currentPlayerIndex)) {
+        points = scoringHits * targetValue;
+        player.score += points;
+      }
+
+      player.dartsThrown += 1;
+      player.throwLog.push({ target, mult: hits, points });
+      advanceDart(`${multiplier}x ${target}${points ? ` (+${points})` : ""}`);
+      pushUndoSnapshot(snapshot);
+    }
+
+    function advanceDart(actionLabel) {
+      state.dartsInTurn += 1;
+      state.totalDarts += 1;
+      els.lastActionLabel.textContent = actionLabel;
+
+      checkWinner();
+
+      if (!state.gameOver && state.dartsInTurn >= 3) {
+        state.dartsInTurn = 0;
+        state.currentPlayerIndex = (state.currentPlayerIndex + 1) % state.players.length;
+        if (state.currentPlayerIndex === 0) state.round += 1;
+      }
+
+      renderAll();
+      persistCurrentGame();
+    }
+
+    function checkWinner() {
+      const closedPlayers = state.players.filter(isClosed);
+      if (!closedPlayers.length) return false;
+
+      const maxScore = Math.max(...state.players.map(p => p.score));
+      const eligible = closedPlayers.filter(p => p.score === maxScore);
+
+      if (eligible.length) {
+        state.gameOver = true;
+        state.winnerNames = eligible.map(p => p.name);
+        showWinnerBanner();
+        clearPersistedCurrentGame();
+        return true;
+      }
+      return false;
+    }
+
+    function showWinnerBanner() {
+      const tie = state.winnerNames.length > 1;
+      els.winnerTitle.textContent = tie ? "Tie Game" : `${state.winnerNames[0]} Wins`;
+      els.winnerText.textContent = tie
+        ? `${state.winnerNames.join(", ")} closed all targets and finished tied for the top score.`
+        : `${state.winnerNames[0]} closed all targets and finished with the highest score.`;
+      els.winnerBanner.classList.add("show");
+      state.savedGamePending = true;
+    }
+
+    const undoStack = [];
+    function pushUndoSnapshot(snapshot) {
+      undoStack.push(snapshot);
+      if (undoStack.length > 500) undoStack.shift();
+    }
+
+    function undoLast() {
+      if (!undoStack.length) return;
+      const prev = undoStack.pop();
+      restoreSerializableCurrentState(prev);
+      state.gameOver = false;
+      state.winnerNames = [];
+      state.savedGamePending = false;
+      els.winnerBanner.classList.remove("show");
+      els.lastActionLabel.textContent = "Undo";
+      renderAll();
+      persistCurrentGame();
     }
 
     function renderScoreboard() {
-      el.scoreHead.innerHTML = `
-        <tr>
-          <th>Player</th>
-          ${Array.from({ length: state.totalHoles }, (_, i) => `<th>H${i + 1}</th>`).join("")}
-          <th>Total</th>
-        </tr>
-      `;
+      els.scoreboardBody.innerHTML = "";
 
-      el.scoreBody.innerHTML = state.players.map((player, index) => `
-        <tr class="${state.started && !state.gameOver && index === state.currentPlayer ? "active-row" : ""}">
-          <td class="name">${player.name}</td>
-          ${Array.from({ length: state.totalHoles }, (_, i) => `
-            <td class="hole-cell ${state.currentHole === i + 1 && !state.gameOver ? "current" : ""}">
-              ${player.scores[i] ?? ""}
-            </td>
-          `).join("")}
-          <td class="total">${player.total}</td>
-        </tr>
-      `).join("");
-    }
-
-    function startGame() {
-      const names = getPlayerNames();
-      if (names.length < 2) {
-        setAnnouncement("Enter at least 2 players to start.", "warn");
+      if (!state.players.length) {
+        els.scoreboardBody.innerHTML = `
+          <tr><td colspan="16"><div class="empty">No active game. Add players and start a new game.</div></td></tr>
+        `;
         return;
       }
 
-      state.players = names.map(createPlayer);
-      state.totalHoles = Number(el.gameMode.value);
-      state.currentPlayer = 0;
-      state.currentHole = 1;
-      state.currentDart = 1;
-      state.selectedShot = "outer";
-      state.dartsThisTurn = [];
-      state.started = true;
-      state.gameOver = false;
-      state.historyStack = [];
+      state.players.forEach((player, idx) => {
+        const tr = document.createElement("tr");
+        if (!state.gameOver && idx === state.currentPlayerIndex) tr.classList.add("player-turn");
 
-      el.gameArea.classList.remove("hidden");
-      buildTargetGrid();
-      updateMeta();
-      renderScoreboard();
-      setAnnouncement(`Hole ${state.currentHole}: ${state.players[0].name} throws for ${state.currentHole}. Best dart counts.`, "");
-    }
-
-    function shotScoreForThrow(target, shotType) {
-      if (shotType === "miss") {
-        return {
-          points: 5,
-          label: "Miss",
-          valid: false
-        };
-      }
-
-      if (String(target) !== String(state.currentHole)) {
-        return {
-          points: 5,
-          label: `Wrong #`,
-          valid: false
-        };
-      }
-
-      return {
-        points: SHOT_POINTS[shotType],
-        label: SHOT_LABELS[shotType],
-        valid: true
-      };
-    }
-
-    function recordThrow(target) {
-      if (!state.started || state.gameOver) return;
-
-      saveSnapshot();
-
-      const result = shotScoreForThrow(target, state.selectedShot);
-      state.dartsThisTurn.push({
-        target,
-        shot: state.selectedShot,
-        points: result.points,
-        label: result.label
-      });
-
-      if (state.currentDart >= 3) {
-        finalizeTurn();
-      } else {
-        state.currentDart += 1;
-        updateMeta();
-
-        if (result.valid) {
-          setAnnouncement(`${state.players[state.currentPlayer].name} hits ${target} • ${result.label} for ${result.points}.`, "good");
-        } else {
-          setAnnouncement(`${state.players[state.currentPlayer].name} records a miss value of 5.`, result.label === "Miss" ? "" : "warn");
-        }
-      }
-    }
-
-    function recordMiss() {
-      if (!state.started || state.gameOver) return;
-      saveSnapshot();
-
-      state.dartsThisTurn.push({
-        target: "MISS",
-        shot: "miss",
-        points: 5,
-        label: "Miss"
-      });
-
-      if (state.currentDart >= 3) {
-        finalizeTurn();
-      } else {
-        state.currentDart += 1;
-        updateMeta();
-        setAnnouncement(`${state.players[state.currentPlayer].name} misses.`, "");
-      }
-    }
-
-    function finalizeTurn() {
-      const player = state.players[state.currentPlayer];
-      const best = Math.min(...state.dartsThisTurn.map(d => d.points));
-      player.scores[state.currentHole - 1] = best;
-      player.total = player.scores.reduce((sum, value) => sum + value, 0);
-      player.dartLog.push({
-        hole: state.currentHole,
-        darts: deepClone(state.dartsThisTurn),
-        best
-      });
-
-      const bestDart = state.dartsThisTurn.find(d => d.points === best);
-      setAnnouncement(`${player.name} scores ${best} on hole ${state.currentHole} with ${bestDart?.label ?? "Miss"}.`, best <= 3 ? "good" : "");
-
-      advanceTurn();
-    }
-
-    function advanceTurn() {
-      state.currentPlayer = (state.currentPlayer + 1) % state.players.length;
-      if (state.currentPlayer === 0) {
-        state.currentHole += 1;
-      }
-
-      state.currentDart = 1;
-      state.selectedShot = "outer";
-      state.dartsThisTurn = [];
-
-      if (state.currentHole > state.totalHoles) {
-        finishGame();
-        return;
-      }
-
-      updateMeta();
-      renderScoreboard();
-      setAnnouncement(`Hole ${state.currentHole}: ${state.players[state.currentPlayer].name} throws for ${state.currentHole}.`, "");
-    }
-
-    function finishGame() {
-      state.gameOver = true;
-      updateMeta();
-      renderScoreboard();
-
-      const sorted = [...state.players].sort((a, b) => a.total - b.total);
-      const lowScore = sorted[0].total;
-      const winners = sorted.filter(player => player.total === lowScore);
-
-      if (winners.length === 1) {
-        setAnnouncement(`${winners[0].name} wins with ${lowScore}.`, "good");
-      } else {
-        setAnnouncement(`Tie at ${lowScore} between ${winners.map(w => w.name).join(", ")}.`, "good");
-      }
-
-      saveCompletedMatch();
-      renderHistory();
-      renderLeaderboard();
-    }
-
-    function undo() {
-      if (!state.historyStack.length) return;
-      const prev = state.historyStack.pop();
-
-      state.players = prev.players;
-      state.totalHoles = prev.totalHoles;
-      state.currentPlayer = prev.currentPlayer;
-      state.currentHole = prev.currentHole;
-      state.currentDart = prev.currentDart;
-      state.selectedShot = prev.selectedShot;
-      state.dartsThisTurn = prev.dartsThisTurn;
-      state.started = prev.started;
-      state.gameOver = prev.gameOver;
-
-      updateMeta();
-      renderScoreboard();
-      setAnnouncement("Last action undone.", "");
-    }
-
-    function endTurnEarly() {
-      if (!state.started || state.gameOver) return;
-      if (!state.dartsThisTurn.length) {
-        setAnnouncement("Throw at least one dart before ending the turn.", "warn");
-        return;
-      }
-
-      saveSnapshot();
-
-      while (state.dartsThisTurn.length < 3) {
-        state.dartsThisTurn.push({
-          target: "MISS",
-          shot: "miss",
-          points: 5,
-          label: "Miss"
+        let targetCells = "";
+        TARGETS.forEach(target => {
+          const marks = player.marks[target];
+          const circles = [0,1,2].map(i => {
+            const cls = i < Math.min(marks,3) ? "mark filled" : "mark";
+            return `<span class="${cls}"></span>`;
+          }).join("");
+          let extra = "";
+          if (marks > 3) {
+            extra = Array.from({length: marks - 3}).map(() => `<span class="mark extra"></span>`).join("");
+          }
+          targetCells += `<td><div class="marks">${circles}${extra}</div></td>`;
         });
-      }
 
-      finalizeTurn();
-    }
+        const ppr = player.dartsThrown ? (player.score / (player.dartsThrown / 3)).toFixed(1) : "0.0";
 
-    function newGame() {
-      startGame();
-    }
-
-    function baseLeaderboardRecord(name) {
-      return {
-        name,
-        matches: 0,
-        wins: 0,
-        losses: 0,
-        ties: 0,
-        elo: 1200
-      };
-    }
-
-    function expectedScore(ra, rb) {
-      return 1 / (1 + Math.pow(10, (rb - ra) / 400));
-    }
-
-    function updateEloForMatch(leaderboard, results) {
-      const k = 24;
-
-      results.forEach(player => {
-        if (!leaderboard[player.name]) leaderboard[player.name] = baseLeaderboardRecord(player.name);
+        tr.innerHTML = `
+          <td>
+            <div class="player-name">
+              <strong>${escapeHtml(player.name)}</strong>
+              <span class="mini">${idx === state.currentPlayerIndex && !state.gameOver ? "Throwing now" : "Waiting"} · ${player.dartsThrown} darts</span>
+            </div>
+          </td>
+          ${targetCells}
+          <td><strong>${player.score}</strong></td>
+          <td>${marksClosedCount(player)}/${TARGETS.length}</td>
+          <td>${ppr}</td>
+        `;
+        els.scoreboardBody.appendChild(tr);
       });
-
-      for (let i = 0; i < results.length; i++) {
-        for (let j = i + 1; j < results.length; j++) {
-          const a = results[i];
-          const b = results[j];
-          const recA = leaderboard[a.name];
-          const recB = leaderboard[b.name];
-
-          const outcomeA = a.total < b.total ? 1 : a.total === b.total ? 0.5 : 0;
-          const ea = expectedScore(recA.elo, recB.elo);
-          const eb = expectedScore(recB.elo, recA.elo);
-
-          recA.elo = Math.round(recA.elo + k * (outcomeA - ea));
-          recB.elo = Math.round(recB.elo + k * ((1 - outcomeA) - eb));
-        }
-      }
     }
 
-    function saveCompletedMatch() {
-      const history = getStorage(STORAGE_KEYS.history, []);
-      const leaderboard = getStorage(STORAGE_KEYS.leaderboard, {});
-
-      const sorted = [...state.players].sort((a, b) => a.total - b.total);
-      const lowScore = sorted[0].total;
-      const winners = sorted.filter(player => player.total === lowScore).map(player => player.name);
-
-      const match = {
-        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-        date: el.matchDate.value || todayStr(),
-        holes: state.totalHoles,
-        players: state.players.map(player => ({
-          name: player.name,
-          scores: player.scores,
-          total: player.total
-        })),
-        winner: winners.length === 1 ? winners[0] : "Tie"
-      };
-
-      history.unshift(match);
-      setStorage(STORAGE_KEYS.history, history);
-
-      state.players.forEach(player => {
-        if (!leaderboard[player.name]) leaderboard[player.name] = baseLeaderboardRecord(player.name);
-
-        leaderboard[player.name].matches += 1;
-
-        if (winners.length > 1 && winners.includes(player.name)) {
-          leaderboard[player.name].ties += 1;
-        } else if (winners.length === 1 && winners[0] === player.name) {
-          leaderboard[player.name].wins += 1;
-        } else {
-          leaderboard[player.name].losses += 1;
-        }
-      });
-
-      updateEloForMatch(leaderboard, state.players.map(player => ({
-        name: player.name,
-        total: player.total
-      })));
-
-      setStorage(STORAGE_KEYS.leaderboard, leaderboard);
+    function renderStatus() {
+      els.currentTurnLabel.textContent = state.players.length ? currentPlayer().name : "—";
+      els.currentTurnDartsLabel.textContent = `${state.dartsInTurn} / 3`;
+      els.metricRound.textContent = state.round;
+      els.metricPlayer.textContent = state.players.length ? currentPlayer().name : "—";
+      els.metricDarts.textContent = `${state.dartsInTurn} / 3`;
+      els.metricGamesSaved.textContent = loadGames().length;
     }
 
-    function renderHistory() {
-      const history = getStorage(STORAGE_KEYS.history, []);
-      if (!history.length) {
-        el.historyList.innerHTML = `<div class="history-item"><div class="muted">No saved rounds yet.</div></div>`;
+    function renderRecentGames() {
+      const games = loadGames().slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+      els.recentGames.innerHTML = "";
+      const recent = games.slice(0, 6);
+      if (!recent.length) {
+        els.recentGames.innerHTML = `<div class="empty">No saved games yet.</div>`;
         return;
       }
-
-      el.historyList.innerHTML = history.map(match => `
-        <article class="history-item">
+      recent.forEach(game => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.innerHTML = `
           <div class="history-top">
-            <strong>${match.holes} Holes</strong>
-            <span class="pill">${match.date}</span>
+            <div>
+              <strong>${escapeHtml(game.winnerLabel || "Game result")}</strong>
+              <div class="mini">${formatDate(game.date)}</div>
+            </div>
+            <span class="pill">${game.players.length} players · ${game.rounds} rounds</span>
           </div>
-          <div style="margin-top:8px">${match.players.map(p => `${p.name}: <strong>${p.total}</strong>`).join(" &nbsp;•&nbsp; ")}</div>
-          <div class="muted" style="margin-top:8px">Winner: <strong>${match.winner}</strong></div>
-        </article>
-      `).join("");
+          <div class="mini">${game.players.map((p, i) => `${escapeHtml(p)} (${game.scores[i] ?? 0})`).join(" · ")}</div>
+        `;
+        els.recentGames.appendChild(div);
+      });
+    }
+
+    function renderAllGamesList() {
+      const games = loadGames().slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+      els.allGamesList.innerHTML = "";
+      if (!games.length) {
+        els.allGamesList.innerHTML = `<div class="empty">No saved games found.</div>`;
+        return;
+      }
+      games.forEach(game => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.innerHTML = `
+          <div class="history-top">
+            <div>
+              <strong>${escapeHtml(game.winnerLabel)}</strong>
+              <div class="mini">${formatDate(game.date)}</div>
+            </div>
+            <span class="pill">${game.players.length} players</span>
+          </div>
+          <div class="mini">${game.players.map((p, i) => `${escapeHtml(p)}: ${game.scores[i] ?? 0}`).join(" · ")}</div>
+        `;
+        els.allGamesList.appendChild(div);
+      });
     }
 
     function renderLeaderboard() {
-      const leaderboard = getStorage(STORAGE_KEYS.leaderboard, {});
-      const rows = Object.values(leaderboard)
-        .map(player => ({
-          ...player,
-          winPct: player.matches ? (player.wins / player.matches) * 100 : 0
-        }))
-        .sort((a, b) => b.elo - a.elo || b.winPct - a.winPct || b.wins - a.wins);
+      const board = loadLeaderboard()
+        .sort((a,b) => b.elo - a.elo || b.winPct - a.winPct || b.ppr - a.ppr);
 
-      if (!rows.length) {
-        el.leaderboardList.innerHTML = `<div class="leader-item"><strong>No leaderboard data yet.</strong><span class="muted">Play a match to start rankings.</span></div>`;
+      els.leaderboardBody.innerHTML = "";
+      if (!board.length) {
+        els.leaderboardBody.innerHTML = `<tr><td colspan="9"><div class="empty">No leaderboard data yet. Save a game to begin.</div></td></tr>`;
         return;
       }
 
-      el.leaderboardList.innerHTML = rows.map((player, index) => `
-        <div class="leader-item">
-          <div><strong>#${index + 1} ${player.name}</strong><div class="muted">${player.matches} matches</div></div>
-          <div><span class="pill">W ${player.wins}</span></div>
-          <div><span class="pill">L ${player.losses}</span></div>
-          <div><span class="pill">T ${player.ties}</span></div>
-          <div><span class="pill">${player.winPct.toFixed(1)}%</span></div>
-          <div><span class="pill">${player.elo} ELO</span></div>
-        </div>
-      `).join("");
+      board.forEach((entry, index) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td><strong>${escapeHtml(entry.name)}</strong></td>
+          <td>${entry.elo.toFixed(0)}</td>
+          <td>${entry.wins}</td>
+          <td>${entry.losses}</td>
+          <td>${entry.ties}</td>
+          <td>${entry.winPct.toFixed(1)}%</td>
+          <td>${entry.ppr.toFixed(1)}</td>
+          <td>${entry.games}</td>
+        `;
+        els.leaderboardBody.appendChild(tr);
+      });
     }
 
-    el.addPlayerBtn.addEventListener("click", () => addPlayerField());
-    el.startGameBtn.addEventListener("click", startGame);
-    el.undoBtn.addEventListener("click", undo);
-    el.newGameBtn.addEventListener("click", newGame);
-    el.finishHoleBtn.addEventListener("click", endTurnEarly);
-    el.missBtn.addEventListener("click", recordMiss);
+    function renderAll() {
+      renderScoreboard();
+      renderStatus();
+      renderRecentGames();
+      updateSelectedTargetUI();
+    }
 
-    document.addEventListener("click", (e) => {
-      const shotBtn = e.target.closest("[data-shot]");
-      if (!shotBtn) return;
-      state.selectedShot = shotBtn.dataset.shot;
-      updateMeta();
-    });
+    function saveCurrentFinishedGame() {
+      if (!state.gameOver || !state.players.length || !state.savedGamePending) {
+        alert("There is no finished game waiting to be saved.");
+        return;
+      }
 
-    el.leaderboardToggle.addEventListener("click", () => {
-      el.leaderboardPanel.classList.remove("hidden");
-      el.historyPanel.classList.add("hidden");
+      const game = {
+        id: cryptoRandomId(),
+        date: new Date().toISOString().slice(0,10),
+        createdAt: new Date().toISOString(),
+        players: state.players.map(p => p.name),
+        scores: state.players.map(p => p.score),
+        rounds: state.round,
+        winners: state.winnerNames.slice(),
+        resultType: state.winnerNames.length > 1 ? "tie" : "winner",
+        winnerLabel: state.winnerNames.length > 1 ? `Tie — ${state.winnerNames.join(", ")}` : `Winner — ${state.winnerNames[0]}`,
+        darts: state.players.map(p => p.dartsThrown)
+      };
+
+      appendSavedGame(game);
+      updateLeaderboardFromGame(game);
+      state.savedGamePending = false;
+      renderAll();
       renderLeaderboard();
+      renderAllGamesList();
+      alert("Game saved.");
+    }
+
+    function saveHistoricalGame() {
+      const date = els.historyDate.value;
+      const players = els.historyPlayers.value.split(",").map(s => s.trim()).filter(Boolean);
+      const scores = els.historyScores.value.split(",").map(s => Number(s.trim()));
+      const rounds = Math.max(1, Number(els.historyRounds.value || 1));
+      const resultType = els.historyResult.value;
+      const winners = els.historyWinner.value.split(",").map(s => s.trim()).filter(Boolean);
+
+      if (!date || players.length < 2) {
+        alert("Please enter a date and at least 2 players.");
+        return;
+      }
+      if (scores.length !== players.length || scores.some(Number.isNaN)) {
+        alert("Scores must match the number of players.");
+        return;
+      }
+      if (resultType === "winner" && winners.length !== 1) {
+        alert("For a winner result, enter exactly one winner name.");
+        return;
+      }
+      if (resultType === "tie" && winners.length < 2) {
+        alert("For a tie, enter at least two tied player names.");
+        return;
+      }
+
+      const game = {
+        id: cryptoRandomId(),
+        date,
+        createdAt: new Date().toISOString(),
+        players,
+        scores,
+        rounds,
+        winners,
+        resultType,
+        winnerLabel: resultType === "tie" ? `Tie — ${winners.join(", ")}` : `Winner — ${winners[0]}`,
+        darts: players.map(() => rounds * 3)
+      };
+
+      appendSavedGame(game);
+      updateLeaderboardFromGame(game);
+      renderAll();
+      renderLeaderboard();
+      renderAllGamesList();
+      els.historyPlayers.value = "";
+      els.historyScores.value = "";
+      els.historyRounds.value = 10;
+      els.historyWinner.value = "";
+      alert("Historical game saved.");
+    }
+
+    function updateLeaderboardFromGame(game) {
+      let board = loadLeaderboard();
+      const map = new Map(board.map(e => [e.name, e]));
+
+      game.players.forEach((name, idx) => {
+        if (!map.has(name)) {
+          map.set(name, {
+            name,
+            wins: 0,
+            losses: 0,
+            ties: 0,
+            games: 0,
+            elo: 1000,
+            totalPoints: 0,
+            totalRounds: 0,
+            ppr: 0,
+            winPct: 0
+          });
+        }
+        const entry = map.get(name);
+        entry.games += 1;
+        entry.totalPoints += Number(game.scores[idx] || 0);
+        entry.totalRounds += Number(game.rounds || 0);
+      });
+
+      const winners = new Set(game.winners);
+      game.players.forEach(name => {
+        const entry = map.get(name);
+        if (game.resultType === "tie") {
+          if (winners.has(name)) entry.ties += 1;
+          else entry.losses += 1;
+        } else {
+          if (winners.has(name)) entry.wins += 1;
+          else entry.losses += 1;
+        }
+      });
+
+      const K = 24;
+      const names = game.players;
+      for (let i = 0; i < names.length; i++) {
+        for (let j = i + 1; j < names.length; j++) {
+          const a = map.get(names[i]);
+          const b = map.get(names[j]);
+          const expectedA = 1 / (1 + Math.pow(10, (b.elo - a.elo) / 400));
+          const expectedB = 1 - expectedA;
+
+          let scoreA = 0.5;
+          let scoreB = 0.5;
+
+          const aWin = winners.has(names[i]);
+          const bWin = winners.has(names[j]);
+
+          if (game.resultType === "winner") {
+            if (aWin && !bWin) { scoreA = 1; scoreB = 0; }
+            else if (!aWin && bWin) { scoreA = 0; scoreB = 1; }
+            else { scoreA = 0.5; scoreB = 0.5; }
+          } else {
+            if (aWin && bWin) { scoreA = 0.5; scoreB = 0.5; }
+            else if (aWin && !bWin) { scoreA = 1; scoreB = 0; }
+            else if (!aWin && bWin) { scoreA = 0; scoreB = 1; }
+            else { scoreA = 0.5; scoreB = 0.5; }
+          }
+
+          a.elo += K * (scoreA - expectedA);
+          b.elo += K * (scoreB - expectedB);
+        }
+      }
+
+      board = [...map.values()].map(entry => {
+        const decisiveGames = entry.wins + entry.losses + entry.ties;
+        const weightedWins = entry.wins + entry.ties * 0.5;
+        entry.winPct = decisiveGames ? (weightedWins / decisiveGames) * 100 : 0;
+        entry.ppr = entry.totalRounds ? (entry.totalPoints / entry.totalRounds) : 0;
+        return entry;
+      });
+
+      saveLeaderboard(board);
+    }
+
+    function appendSavedGame(game) {
+      const games = loadGames();
+      games.push(game);
+      localStorage.setItem(STORAGE_KEYS.games, JSON.stringify(games));
+    }
+
+    function loadGames() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEYS.games)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function loadLeaderboard() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEYS.leaderboard)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveLeaderboard(board) {
+      localStorage.setItem(STORAGE_KEYS.leaderboard, JSON.stringify(board));
+    }
+
+    function persistCurrentGame() {
+      if (!state.players.length || state.gameOver) return;
+      localStorage.setItem(STORAGE_KEYS.current, JSON.stringify(getSerializableCurrentState()));
+    }
+
+    function loadPersistedCurrentGame() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(STORAGE_KEYS.current));
+        if (raw && raw.players && raw.players.length) {
+          restoreSerializableCurrentState(raw);
+          renderAll();
+        }
+      } catch {}
+    }
+
+    function clearPersistedCurrentGame() {
+      localStorage.removeItem(STORAGE_KEYS.current);
+    }
+
+    function getSerializableCurrentState() {
+      return {
+        players: JSON.parse(JSON.stringify(state.players)),
+        currentPlayerIndex: state.currentPlayerIndex,
+        dartsInTurn: state.dartsInTurn,
+        totalDarts: state.totalDarts,
+        round: state.round,
+        selectedTarget: state.selectedTarget
+      };
+    }
+
+    function restoreSerializableCurrentState(obj) {
+      state.players = JSON.parse(JSON.stringify(obj.players || []));
+      state.currentPlayerIndex = obj.currentPlayerIndex || 0;
+      state.dartsInTurn = obj.dartsInTurn || 0;
+      state.totalDarts = obj.totalDarts || 0;
+      state.round = obj.round || 1;
+      state.selectedTarget = obj.selectedTarget || null;
+    }
+
+    function resetCurrentGame() {
+      if (!confirm("Reset the current unsaved game?")) return;
+      state.players = [];
+      state.currentPlayerIndex = 0;
+      state.dartsInTurn = 0;
+      state.totalDarts = 0;
+      state.round = 1;
+      state.selectedTarget = null;
+      state.gameOver = false;
+      state.winnerNames = [];
+      state.savedGamePending = false;
+      undoStack.length = 0;
+      els.lastActionLabel.textContent = "—";
+      els.winnerBanner.classList.remove("show");
+      clearPersistedCurrentGame();
+      renderAll();
+    }
+
+    function openModal(modal) {
+      modal.classList.add("show");
+      modal.setAttribute("aria-hidden", "false");
+    }
+    function closeModal(modal) {
+      modal.classList.remove("show");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    function formatDate(dateStr) {
+      const d = new Date(dateStr + "T00:00:00");
+      if (Number.isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString(undefined, {year:"numeric", month:"short", day:"numeric"});
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, s => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[s]));
+    }
+
+    function cryptoRandomId() {
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+      return "id-" + Math.random().toString(36).slice(2) + Date.now();
+    }
+
+    els.addPlayerBtn.addEventListener("click", () => createPlayerInput(""));
+    els.startGameBtn.addEventListener("click", () => {
+      undoStack.length = 0;
+      startGame(getPlayerNamesFromInputs());
     });
 
-    el.historyToggle.addEventListener("click", () => {
-      el.historyPanel.classList.remove("hidden");
-      el.leaderboardPanel.classList.add("hidden");
-      renderHistory();
+    document.querySelectorAll(".mult-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        if (!state.selectedTarget) {
+          alert("Select a target first.");
+          return;
+        }
+        applyThrow(state.selectedTarget, Number(btn.dataset.mult));
+      });
     });
 
-    addPlayerField();
-    addPlayerField();
-    el.matchDate.value = todayStr();
-    buildTargetGrid();
-    renderHistory();
-    renderLeaderboard();
+    els.missBtn.addEventListener("click", () => applyThrow("MISS", 0));
+    els.undoBtn.addEventListener("click", undoLast);
+    els.resetCurrentBtn.addEventListener("click", resetCurrentGame);
 
-    const observer = new IntersectionObserver((entries) => {
+    els.saveFinishedGameBtn.addEventListener("click", saveCurrentFinishedGame);
+    els.newGameQuickBtn.addEventListener("click", () => startGame(getPlayerNamesFromInputs()));
+
+    els.leaderboardBtn.addEventListener("click", () => {
+      renderLeaderboard();
+      openModal(els.leaderboardModal);
+    });
+    els.closeLeaderboardBtn.addEventListener("click", () => closeModal(els.leaderboardModal));
+
+    els.calendarBtn.addEventListener("click", () => {
+      renderAllGamesList();
+      els.historyDate.value = new Date().toISOString().slice(0,10);
+      openModal(els.calendarModal);
+    });
+    els.closeCalendarBtn.addEventListener("click", () => closeModal(els.calendarModal));
+    els.saveHistoryGameBtn.addEventListener("click", saveHistoricalGame);
+
+    [els.leaderboardModal, els.calendarModal].forEach(modal => {
+      modal.addEventListener("click", e => {
+        if (e.target === modal) closeModal(modal);
+      });
+    });
+
+    const observer = new IntersectionObserver(entries => {
       entries.forEach(entry => {
         if (entry.isIntersecting) entry.target.style.animationPlayState = "running";
       });
-    }, { threshold: 0.15 });
+    }, {threshold:.1});
 
-    document.querySelectorAll(".reveal").forEach(node => observer.observe(node));
+    document.querySelectorAll(".reveal").forEach(el => observer.observe(el));
+
+    initPlayerInputs();
+    buildTargetButtons();
+    renderAll();
+    renderLeaderboard();
+    renderAllGamesList();
+    loadPersistedCurrentGame();
   </script>
 </body>
 </html>
