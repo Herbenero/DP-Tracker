@@ -282,6 +282,87 @@
       border:1px solid var(--line);
       background:rgba(8,12,18,.6);
     }
+
+    .scoreboard-vertical{
+      display:grid;
+      gap:16px;
+      padding:16px;
+    }
+
+    .player-scoreboard{
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:rgba(255,255,255,.02);
+      overflow:hidden;
+    }
+
+    .player-scoreboard-header{
+      padding:14px 16px;
+      border-bottom:1px solid var(--line);
+      background:linear-gradient(180deg, rgba(19,29,41,.98), rgba(16,24,34,.98));
+    }
+
+    .player-scoreboard-header strong{
+      font-size:1.1rem;
+    }
+
+    .player-scoreboard-header .mini{
+      font-size:.8rem;
+      color:var(--muted);
+      margin-top:4px;
+    }
+
+    .scoreboard-targets{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(100px, 1fr));
+      gap:12px;
+      padding:14px 16px;
+    }
+
+    .target-cell{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      padding:10px;
+      border:1px solid var(--line-2);
+      border-radius:12px;
+      background:rgba(255,255,255,.01);
+      text-align:center;
+    }
+
+    .target-label{
+      font-weight:700;
+      font-size:.9rem;
+      color:var(--text);
+    }
+
+    .target-status{
+      font-size:.75rem;
+      color:var(--accent);
+      text-transform:uppercase;
+      letter-spacing:.05em;
+      font-weight:700;
+    }
+
+    .marks{
+      display:flex;
+      justify-content:center;
+      gap:5px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .mark{
+      width:14px;height:14px;border-radius:999px;
+      border:1px solid var(--line-2);
+      background:rgba(255,255,255,.03);
+    }
+    .mark.filled{
+      background:linear-gradient(180deg, rgba(126,240,178,.94), rgba(126,240,178,.48));
+      border-color:rgba(126,240,178,.85);
+      box-shadow:0 0 14px rgba(126,240,178,.26);
+    }
+
     table{
       width:100%;
       border-collapse:collapse;
@@ -320,25 +401,6 @@
       gap:3px;
     }
     .mini{font-size:.8rem;color:var(--muted)}
-
-    .marks{
-      display:flex;
-      justify-content:center;
-      gap:5px;
-      min-width:82px;
-      align-items:center;
-      flex-wrap:wrap;
-    }
-    .mark{
-      width:16px;height:16px;border-radius:999px;
-      border:1px solid var(--line-2);
-      background:rgba(255,255,255,.03);
-    }
-    .mark.filled{
-      background:linear-gradient(180deg, rgba(126,240,178,.94), rgba(126,240,178,.48));
-      border-color:rgba(126,240,178,.85);
-      box-shadow:0 0 14px rgba(126,240,178,.26);
-    }
 
     .history-item{
       border:1px solid var(--line);
@@ -440,6 +502,7 @@
       .multiplier-grid{grid-template-columns:repeat(3, minmax(0,1fr))}
       .action-grid,.field-grid{grid-template-columns:1fr}
       .winner-banner{flex-direction:column;align-items:flex-start}
+      .scoreboard-targets{grid-template-columns:repeat(auto-fit, minmax(80px, 1fr))}
     }
   </style>
 </head>
@@ -571,32 +634,7 @@
           </div>
 
           <div class="scoreboard-wrap">
-            <table id="scoreboardTable" aria-label="Shove a Penny scoreboard">
-              <thead>
-                <tr>
-                  <th>Player</th>
-                  <th>5</th>
-                  <th>6</th>
-                  <th>7</th>
-                  <th>8</th>
-                  <th>9</th>
-                  <th>10</th>
-                  <th>11</th>
-                  <th>12</th>
-                  <th>13</th>
-                  <th>14</th>
-                  <th>15</th>
-                  <th>16</th>
-                  <th>17</th>
-                  <th>18</th>
-                  <th>19</th>
-                  <th>20</th>
-                  <th>Bull</th>
-                  <th>Closed</th>
-                </tr>
-              </thead>
-              <tbody id="scoreboardBody"></tbody>
-            </table>
+            <div class="scoreboard-vertical" id="scoreboardBody"></div>
           </div>
         </div>
       </main>
@@ -944,32 +982,48 @@
     function renderScoreboard() {
       els.scoreboardBody.innerHTML = "";
       if (!state.players.length) {
-        els.scoreboardBody.innerHTML = `<tr><td colspan="${TARGETS.length + 2}"><div class="empty">No active game. Add players and start a new game.</div></td></tr>`;
+        els.scoreboardBody.innerHTML = `<div class="empty">No active game. Add players and start a new game.</div>`;
         return;
       }
 
       state.players.forEach((player, idx) => {
-        const tr = document.createElement("tr");
-        if (!state.gameOver && idx === state.currentPlayerIndex) tr.classList.add("player-turn");
+        const playerBoard = document.createElement("div");
+        playerBoard.className = "player-scoreboard";
+        if (!state.gameOver && idx === state.currentPlayerIndex) {
+          playerBoard.style.borderColor = "rgba(126,240,178,.32)";
+        }
 
-        let cells = "";
+        const header = document.createElement("div");
+        header.className = "player-scoreboard-header";
+        const statusText = state.gameOver 
+          ? (state.winnerName === player.name ? 'Winner' : 'Finished')
+          : (idx === state.currentPlayerIndex ? 'Throwing now' : 'Waiting');
+        header.innerHTML = `
+          <strong>${escapeHtml(player.name)}</strong>
+          <div class="mini">${statusText} · ${player.dartsThrown} darts thrown</div>
+        `;
+        playerBoard.appendChild(header);
+
+        const targetsGrid = document.createElement("div");
+        targetsGrid.className = "scoreboard-targets";
+
         TARGETS.forEach(target => {
           const marks = player.marks[target];
+          const isClos = marks >= 3;
           const dots = [0,1,2].map(i => `<span class="mark ${i < Math.min(marks,3) ? 'filled' : ''}"></span>`).join("");
-          cells += `<td><div class="marks">${dots}</div></td>`;
+          
+          const cell = document.createElement("div");
+          cell.className = "target-cell";
+          cell.innerHTML = `
+            <div class="target-label">${target}</div>
+            <div class="marks">${dots}</div>
+            ${isClos ? `<div class="target-status">Closed</div>` : ''}
+          `;
+          targetsGrid.appendChild(cell);
         });
 
-        tr.innerHTML = `
-          <td>
-            <div class="player-name">
-              <strong>${escapeHtml(player.name)}</strong>
-              <span class="mini">${state.gameOver ? (state.winnerName === player.name ? 'Winner' : 'Finished') : (idx === state.currentPlayerIndex ? 'Throwing now' : 'Waiting')} · ${player.dartsThrown} darts</span>
-            </div>
-          </td>
-          ${cells}
-          <td>${TARGETS.filter(t => player.marks[t] >= 3).length}/${TARGETS.length}</td>
-        `;
-        els.scoreboardBody.appendChild(tr);
+        playerBoard.appendChild(targetsGrid);
+        els.scoreboardBody.appendChild(playerBoard);
       });
     }
 
@@ -998,19 +1052,348 @@
               <strong>${escapeHtml(game.winnerLabel)}</strong>
               <div class="mini">${formatDate(game.date)}</div>
             </div>
-            <span class="pill">${game.players.length} players · ${game.rounds} rounds</span>
+            <button class="btn small" data-game-id="${game.id}" type="button">Load</button>
           </div>
-          <div class="mini">${game.players.map(p => escapeHtml(p)).join(" · ")}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            ${game.players.map(p => `<span class="pill">${escapeHtml(p)}</span>`).join("")}
+          </div>
         `;
+        div.querySelector("[data-game-id]").addEventListener("click", e => {
+          const gid = e.target.dataset.gameId;
+          loadGameById(gid);
+        });
         els.recentGames.appendChild(div);
       });
     }
 
-    function renderAllGamesList() {
+    function renderAll() {
+      renderScoreboard();
+      renderStatus();
+    }
+
+    function formatDate(dateStr) {
+      const d = new Date(dateStr);
+      return `${d.getMonth()+1}/${d.getDate()} ${d.getHours().toString().padStart(2,"0")}:${d.getMinutes().toString().padStart(2,"0")}`;
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function loadGames() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEYS.games);
+        return stored ? JSON.parse(stored) : [];
+      } catch (e) {
+        console.error("Error loading games:", e);
+        return [];
+      }
+    }
+
+    function saveGame(snapshot) {
+      try {
+        const games = loadGames();
+        const gameEntry = {
+          id: Date.now().toString(),
+          date: new Date().toISOString(),
+          players: snapshot.players.map(p => p.name),
+          winnerLabel: snapshot.winnerName,
+          round: snapshot.round,
+          snapshot
+        };
+        games.push(gameEntry);
+        localStorage.setItem(STORAGE_KEYS.games, JSON.stringify(games));
+        updateLeaderboardElo(snapshot);
+        renderRecentGames();
+        renderStatus();
+      } catch (e) {
+        console.error("Error saving game:", e);
+      }
+    }
+
+    function loadGameById(gameId) {
+      const games = loadGames();
+      const game = games.find(g => g.id === gameId);
+      if (game && game.snapshot) {
+        state.players = game.snapshot.players;
+        state.currentPlayerIndex = game.snapshot.currentPlayerIndex;
+        state.dartsInTurn = game.snapshot.dartsInTurn;
+        state.totalDarts = game.snapshot.totalDarts;
+        state.round = game.snapshot.round;
+        state.selectedTarget = game.snapshot.selectedTarget;
+        state.gameOver = game.snapshot.gameOver;
+        state.winnerName = game.snapshot.winnerName;
+        renderAll();
+      }
+    }
+
+    function getSerializableCurrentState() {
+      return {
+        players: state.players.map(p => ({...p})),
+        currentPlayerIndex: state.currentPlayerIndex,
+        dartsInTurn: state.dartsInTurn,
+        totalDarts: state.totalDarts,
+        round: state.round,
+        selectedTarget: state.selectedTarget,
+        gameOver: state.gameOver,
+        winnerName: state.winnerName
+      };
+    }
+
+    function persistCurrentGame() {
+      try {
+        if (!state.gameOver) {
+          localStorage.setItem(STORAGE_KEYS.current, JSON.stringify(getSerializableCurrentState()));
+        }
+      } catch (e) {
+        console.error("Error persisting game:", e);
+      }
+    }
+
+    function restoreCurrentGame() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEYS.current);
+        if (stored) {
+          const saved = JSON.parse(stored);
+          state.players = saved.players;
+          state.currentPlayerIndex = saved.currentPlayerIndex;
+          state.dartsInTurn = saved.dartsInTurn;
+          state.totalDarts = saved.totalDarts;
+          state.round = saved.round;
+          state.selectedTarget = saved.selectedTarget;
+          state.gameOver = saved.gameOver;
+          state.winnerName = saved.winnerName;
+          renderAll();
+        }
+      } catch (e) {
+        console.error("Error restoring game:", e);
+      }
+    }
+
+    function clearPersistedCurrentGame() {
+      try {
+        localStorage.removeItem(STORAGE_KEYS.current);
+      } catch (e) {
+        console.error("Error clearing persisted game:", e);
+      }
+    }
+
+    function pushUndoSnapshot(snapshot) {
+      undoStack.push(snapshot);
+      if (undoStack.length > 50) undoStack.shift();
+    }
+
+    function updateLeaderboardElo(snapshot) {
+      try {
+        const leaderboard = loadLeaderboard();
+        const winnerName = snapshot.winnerName;
+        
+        snapshot.players.forEach(p => {
+          if (!leaderboard[p.name]) {
+            leaderboard[p.name] = { elo: 1200, wins: 0, losses: 0, games: 0 };
+          }
+          leaderboard[p.name].games += 1;
+          const isWinner = p.name === winnerName;
+          if (isWinner) {
+            leaderboard[p.name].wins += 1;
+            leaderboard[p.name].elo += 32;
+          } else {
+            leaderboard[p.name].losses += 1;
+            leaderboard[p.name].elo -= 8;
+          }
+        });
+        
+        localStorage.setItem(STORAGE_KEYS.leaderboard, JSON.stringify(leaderboard));
+      } catch (e) {
+        console.error("Error updating leaderboard:", e);
+      }
+    }
+
+    function loadLeaderboard() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEYS.leaderboard);
+        return stored ? JSON.parse(stored) : {};
+      } catch (e) {
+        console.error("Error loading leaderboard:", e);
+        return {};
+      }
+    }
+
+    function renderLeaderboard() {
+      const leaderboard = loadLeaderboard();
+      const rows = Object.entries(leaderboard)
+        .map(([name, stats]) => ({name, ...stats}))
+        .sort((a,b) => b.elo - a.elo);
+
+      els.leaderboardBody.innerHTML = "";
+      rows.forEach((row, idx) => {
+        const tr = document.createElement("tr");
+        const winPct = row.games > 0 ? ((row.wins / row.games) * 100).toFixed(1) : "0.0";
+        tr.innerHTML = `
+          <td>${idx + 1}</td>
+          <td>${escapeHtml(row.name)}</td>
+          <td>${Math.round(row.elo)}</td>
+          <td>${row.wins}</td>
+          <td>${row.losses}</td>
+          <td>${winPct}%</td>
+          <td>${row.games}</td>
+        `;
+        els.leaderboardBody.appendChild(tr);
+      });
+    }
+
+    // Event listeners
+    els.addPlayerBtn.addEventListener("click", () => {
+      createPlayerInput();
+    });
+
+    els.startGameBtn.addEventListener("click", () => {
+      const names = getPlayerNamesFromInputs();
+      startGame(names);
+    });
+
+    [...document.querySelectorAll(".mult-btn")].forEach(btn => {
+      btn.addEventListener("click", () => {
+        if (state.selectedTarget) {
+          applyThrow(state.selectedTarget, btn.dataset.mult);
+        }
+      });
+    });
+
+    els.missBtn.addEventListener("click", () => {
+      applyThrow("MISS", 0);
+    });
+
+    els.undoBtn.addEventListener("click", () => {
+      if (undoStack.length > 0) {
+        const snapshot = undoStack.pop();
+        state.players = snapshot.players;
+        state.currentPlayerIndex = snapshot.currentPlayerIndex;
+        state.dartsInTurn = snapshot.dartsInTurn;
+        state.totalDarts = snapshot.totalDarts;
+        state.round = snapshot.round;
+        state.selectedTarget = snapshot.selectedTarget;
+        els.lastActionLabel.textContent = "Undo";
+        renderAll();
+        persistCurrentGame();
+      }
+    });
+
+    els.leaderboardBtn.addEventListener("click", () => {
+      renderLeaderboard();
+      els.leaderboardModal.classList.add("show");
+    });
+
+    els.closeLeaderboardBtn.addEventListener("click", () => {
+      els.leaderboardModal.classList.remove("show");
+    });
+
+    els.calendarBtn.addEventListener("click", () => {
+      renderAllGames();
+      els.calendarModal.classList.add("show");
+    });
+
+    els.closeCalendarBtn.addEventListener("click", () => {
+      els.calendarModal.classList.remove("show");
+    });
+
+    els.resetCurrentBtn.addEventListener("click", () => {
+      if (confirm("Reset current game?")) {
+        state.players = [];
+        state.currentPlayerIndex = 0;
+        state.dartsInTurn = 0;
+        state.totalDarts = 0;
+        state.round = 1;
+        state.selectedTarget = null;
+        state.gameOver = false;
+        state.winnerName = "";
+        undoStack.length = 0;
+        clearPersistedCurrentGame();
+        renderAll();
+      }
+    });
+
+    els.saveFinishedGameBtn.addEventListener("click", () => {
+      if (state.finalSnapshot) {
+        saveGame(state.finalSnapshot);
+        state.savedGamePending = false;
+        alert("Game saved!");
+        state.players = [];
+        state.gameOver = false;
+        state.winnerName = "";
+        renderAll();
+      }
+    });
+
+    els.newGameQuickBtn.addEventListener("click", () => {
+      state.players = [];
+      state.gameOver = false;
+      state.winnerName = "";
+      els.winnerBanner.classList.remove("show");
+      renderAll();
+    });
+
+    els.saveHistoryGameBtn.addEventListener("click", () => {
+      const dateStr = els.historyDate.value;
+      const playersStr = els.historyPlayers.value;
+      const winner = els.historyResult.value.trim();
+      const rounds = parseInt(els.historyRounds.value) || 10;
+
+      if (!dateStr || !playersStr || !winner) {
+        alert("Please fill in all fields.");
+        return;
+      }
+
+      const players = playersStr.split(",").map(p => p.trim()).filter(Boolean);
+      if (!players.includes(winner)) {
+        alert("Winner must be one of the players.");
+        return;
+      }
+
+      const snapshot = {
+        players: players.map(name => freshPlayer(name)),
+        winnerName: winner,
+        round: rounds,
+        currentPlayerIndex: 0,
+        dartsInTurn: 0,
+        totalDarts: 0,
+        selectedTarget: null,
+        gameOver: true
+      };
+
+      try {
+        const games = loadGames();
+        const gameEntry = {
+          id: Date.now().toString(),
+          date: new Date(dateStr).toISOString(),
+          players: players,
+          winnerLabel: winner,
+          round: rounds,
+          snapshot
+        };
+        games.push(gameEntry);
+        localStorage.setItem(STORAGE_KEYS.games, JSON.stringify(games));
+        updateLeaderboardElo(snapshot);
+        els.historyDate.value = "";
+        els.historyPlayers.value = "";
+        els.historyResult.value = "";
+        els.historyRounds.value = "10";
+        alert("Historical game saved!");
+        renderAllGames();
+        renderStatus();
+      } catch (e) {
+        console.error("Error saving historical game:", e);
+        alert("Error saving game.");
+      }
+    });
+
+    function renderAllGames() {
       const games = loadGames().slice().sort((a,b) => new Date(b.date) - new Date(a.date));
       els.allGamesList.innerHTML = "";
       if (!games.length) {
-        els.allGamesList.innerHTML = `<div class="empty">No saved games found.</div>`;
+        els.allGamesList.innerHTML = `<div class="empty">No saved games yet.</div>`;
         return;
       }
       games.forEach(game => {
@@ -1020,332 +1403,22 @@
           <div class="history-top">
             <div>
               <strong>${escapeHtml(game.winnerLabel)}</strong>
-              <div class="mini">${formatDate(game.date)}</div>
+              <div class="mini">${formatDate(game.date)} · Round ${game.round}</div>
             </div>
-            <span class="pill">${game.players.length} players</span>
           </div>
-          <div class="mini">${game.players.map(p => escapeHtml(p)).join(" · ")}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            ${game.players.map(p => `<span class="pill">${escapeHtml(p)}</span>`).join("")}
+          </div>
         `;
         els.allGamesList.appendChild(div);
       });
     }
 
-    function renderLeaderboard() {
-      const board = loadLeaderboard().sort((a,b) => b.elo - a.elo || b.winPct - a.winPct);
-      els.leaderboardBody.innerHTML = "";
-
-      if (!board.length) {
-        els.leaderboardBody.innerHTML = `<tr><td colspan="7"><div class="empty">No leaderboard data yet.</div></td></tr>`;
-        return;
-      }
-
-      board.forEach((entry, index) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${index + 1}</td>
-          <td><strong>${escapeHtml(entry.name)}</strong></td>
-          <td>${entry.elo.toFixed(0)}</td>
-          <td>${entry.wins}</td>
-          <td>${entry.losses}</td>
-          <td>${entry.winPct.toFixed(1)}%</td>
-          <td>${entry.games}</td>
-        `;
-        els.leaderboardBody.appendChild(tr);
-      });
-    }
-
-    function renderAll() {
-      renderScoreboard();
-      renderStatus();
-      renderRecentGames();
-      updateSelectedTargetUI();
-    }
-
-    function saveCurrentFinishedGame() {
-      if (!state.gameOver || !state.savedGamePending || !state.players.length) {
-        alert("There is no finished game waiting to be submitted.");
-        return;
-      }
-
-      const game = {
-        id: cryptoRandomId(),
-        date: new Date().toISOString().slice(0,10),
-        createdAt: new Date().toISOString(),
-        players: state.players.map(p => p.name),
-        rounds: state.round,
-        winner: state.winnerName,
-        winnerLabel: `Winner — ${state.winnerName}`
-      };
-
-      appendSavedGame(game);
-      updateLeaderboardFromGame(game);
-      state.savedGamePending = false;
-      renderAll();
-      renderLeaderboard();
-      renderAllGamesList();
-      alert("Game submitted.");
-    }
-
-    function saveHistoricalGame() {
-      const date = els.historyDate.value;
-      const players = els.historyPlayers.value.split(",").map(s => s.trim()).filter(Boolean);
-      const winner = els.historyResult.value.trim();
-      const rounds = Math.max(1, Number(els.historyRounds.value || 1));
-
-      if (!date || players.length < 2 || !winner) {
-        alert("Please enter date, at least 2 players, and a winner.");
-        return;
-      }
-      if (!players.includes(winner)) {
-        alert("Winner must match one of the entered players.");
-        return;
-      }
-
-      const game = {
-        id: cryptoRandomId(),
-        date,
-        createdAt: new Date().toISOString(),
-        players,
-        rounds,
-        winner,
-        winnerLabel: `Winner — ${winner}`
-      };
-
-      appendSavedGame(game);
-      updateLeaderboardFromGame(game);
-      renderAll();
-      renderLeaderboard();
-      renderAllGamesList();
-      els.historyPlayers.value = "";
-      els.historyResult.value = "";
-      els.historyRounds.value = 10;
-      alert("Historical game saved.");
-    }
-
-    function updateLeaderboardFromGame(game) {
-      let board = loadLeaderboard();
-      const map = new Map(board.map(e => [e.name, e]));
-
-      game.players.forEach(name => {
-        if (!map.has(name)) {
-          map.set(name, {
-            name,
-            wins: 0,
-            losses: 0,
-            games: 0,
-            elo: 1000,
-            winPct: 0
-          });
-        }
-      });
-
-      game.players.forEach(name => {
-        const entry = map.get(name);
-        entry.games += 1;
-        if (name === game.winner) entry.wins += 1;
-        else entry.losses += 1;
-      });
-
-      const K = 24;
-      for (let i = 0; i < game.players.length; i++) {
-        for (let j = i + 1; j < game.players.length; j++) {
-          const a = map.get(game.players[i]);
-          const b = map.get(game.players[j]);
-
-          const expectedA = 1 / (1 + Math.pow(10, (b.elo - a.elo) / 400));
-          const expectedB = 1 - expectedA;
-
-          const scoreA = game.players[i] === game.winner ? 1 : (game.players[j] === game.winner ? 0 : 0.5);
-          const scoreB = game.players[j] === game.winner ? 1 : (game.players[i] === game.winner ? 0 : 0.5);
-
-          a.elo += K * (scoreA - expectedA);
-          b.elo += K * (scoreB - expectedB);
-        }
-      }
-
-      board = [...map.values()].map(entry => {
-        entry.winPct = entry.games ? (entry.wins / entry.games) * 100 : 0;
-        return entry;
-      });
-
-      saveLeaderboard(board);
-    }
-
-    function appendSavedGame(game) {
-      const games = loadGames();
-      games.push(game);
-      localStorage.setItem(STORAGE_KEYS.games, JSON.stringify(games));
-    }
-
-    function loadGames() {
-      try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEYS.games)) || [];
-      } catch {
-        return [];
-      }
-    }
-
-    function loadLeaderboard() {
-      try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEYS.leaderboard)) || [];
-      } catch {
-        return [];
-      }
-    }
-
-    function saveLeaderboard(board) {
-      localStorage.setItem(STORAGE_KEYS.leaderboard, JSON.stringify(board));
-    }
-
-    function getSerializableCurrentState() {
-      return {
-        players: JSON.parse(JSON.stringify(state.players)),
-        currentPlayerIndex: state.currentPlayerIndex,
-        dartsInTurn: state.dartsInTurn,
-        totalDarts: state.totalDarts,
-        round: state.round,
-        selectedTarget: state.selectedTarget
-      };
-    }
-
-    function restoreSerializableCurrentState(obj) {
-      state.players = JSON.parse(JSON.stringify(obj.players || []));
-      state.currentPlayerIndex = obj.currentPlayerIndex || 0;
-      state.dartsInTurn = obj.dartsInTurn || 0;
-      state.totalDarts = obj.totalDarts || 0;
-      state.round = obj.round || 1;
-      state.selectedTarget = obj.selectedTarget || null;
-    }
-
-    function pushUndoSnapshot(snapshot) {
-      undoStack.push(snapshot);
-      if (undoStack.length > 500) undoStack.shift();
-    }
-
-    function undoLast() {
-      if (!undoStack.length) return;
-      const prev = undoStack.pop();
-      restoreSerializableCurrentState(prev);
-      state.gameOver = false;
-      state.winnerName = "";
-      state.savedGamePending = false;
-      state.finalSnapshot = null;
-      els.winnerBanner.classList.remove("show");
-      els.lastActionLabel.textContent = "Undo";
-      renderAll();
-      persistCurrentGame();
-    }
-
-    function persistCurrentGame() {
-      if (!state.players.length || state.gameOver) return;
-      localStorage.setItem(STORAGE_KEYS.current, JSON.stringify(getSerializableCurrentState()));
-    }
-
-    function loadPersistedCurrentGame() {
-      try {
-        const raw = JSON.parse(localStorage.getItem(STORAGE_KEYS.current));
-        if (raw && raw.players && raw.players.length) {
-          restoreSerializableCurrentState(raw);
-          renderAll();
-        }
-      } catch {}
-    }
-
-    function clearPersistedCurrentGame() {
-      localStorage.removeItem(STORAGE_KEYS.current);
-    }
-
-    function resetCurrentGame() {
-      if (!confirm("Reset the current unsaved game?")) return;
-      state.players = [];
-      state.currentPlayerIndex = 0;
-      state.dartsInTurn = 0;
-      state.totalDarts = 0;
-      state.round = 1;
-      state.selectedTarget = null;
-      state.gameOver = false;
-      state.winnerName = "";
-      state.savedGamePending = false;
-      state.finalSnapshot = null;
-      undoStack.length = 0;
-      els.lastActionLabel.textContent = "—";
-      els.winnerBanner.classList.remove("show");
-      clearPersistedCurrentGame();
-      renderAll();
-    }
-
-    function openModal(modal) {
-      modal.classList.add("show");
-      modal.setAttribute("aria-hidden", "false");
-    }
-    function closeModal(modal) {
-      modal.classList.remove("show");
-      modal.setAttribute("aria-hidden", "true");
-    }
-
-    function formatDate(dateStr) {
-      const d = new Date(dateStr + "T00:00:00");
-      if (Number.isNaN(d.getTime())) return dateStr;
-      return d.toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" });
-    }
-
-    function cryptoRandomId() {
-      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
-      return "id-" + Math.random().toString(36).slice(2) + Date.now();
-    }
-
-    function escapeHtml(str) {
-      return String(str).replace(/[&<>"']/g, s => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-      }[s]));
-    }
-
-    els.addPlayerBtn.addEventListener("click", () => createPlayerInput(""));
-    els.startGameBtn.addEventListener("click", () => startGame(getPlayerNamesFromInputs()));
-
-    document.querySelectorAll(".mult-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        if (!state.selectedTarget) {
-          alert("Select a target first.");
-          return;
-        }
-        applyThrow(state.selectedTarget, Number(btn.dataset.mult));
-      });
-    });
-
-    els.missBtn.addEventListener("click", () => applyThrow("MISS", 0));
-    els.undoBtn.addEventListener("click", undoLast);
-    els.resetCurrentBtn.addEventListener("click", resetCurrentGame);
-
-    els.saveFinishedGameBtn.addEventListener("click", saveCurrentFinishedGame);
-    els.newGameQuickBtn.addEventListener("click", () => startGame(getPlayerNamesFromInputs()));
-
-    els.leaderboardBtn.addEventListener("click", () => {
-      renderLeaderboard();
-      openModal(els.leaderboardModal);
-    });
-    els.closeLeaderboardBtn.addEventListener("click", () => closeModal(els.leaderboardModal));
-
-    els.calendarBtn.addEventListener("click", () => {
-      els.historyDate.value = new Date().toISOString().slice(0,10);
-      renderAllGamesList();
-      openModal(els.calendarModal);
-    });
-    els.closeCalendarBtn.addEventListener("click", () => closeModal(els.calendarModal));
-    els.saveHistoryGameBtn.addEventListener("click", saveHistoricalGame);
-
-    [els.leaderboardModal, els.calendarModal].forEach(modal => {
-      modal.addEventListener("click", e => {
-        if (e.target === modal) closeModal(modal);
-      });
-    });
-
+    // Initialize
     initPlayerInputs();
     buildTargetButtons();
-    renderAll();
-    renderLeaderboard();
-    renderAllGamesList();
-    loadPersistedCurrentGame();
+    restoreCurrentGame();
+    renderRecentGames();
   </script>
 </body>
 </html>
