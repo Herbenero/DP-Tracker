@@ -772,7 +772,7 @@
             <section class="panel reveal" aria-labelledby="matchFormTitle">
               <div class="panel-head">
                 <h4 id="matchFormTitle">Match Entry</h4>
-                <span>calendar + multiplayer</span>
+                <span>calendar + multiplayer + score direction</span>
               </div>
               <div class="panel-inner">
                 <form id="matchForm">
@@ -800,9 +800,20 @@
                   </div>
 
                   <div class="field">
+                    <label for="scoreDirection">Score Direction</label>
+                    <select id="scoreDirection" required>
+                      <option value="high" selected>High Score Wins</option>
+                      <option value="low">Low Score Wins</option>
+                    </select>
+                    <div class="help">
+                      Select whether the game is won by the highest or lowest score.
+                    </div>
+                  </div>
+
+                  <div class="field">
                     <label>Players & Scores</label>
                     <div class="help">
-                      Enter all player names in the match. Scores are used to determine placements. Highest score wins. Equal top scores are treated as ties.
+                      Enter all player names in the match. Scores are used to determine placements. Highest or lowest score wins depending on the selected score direction. Equal top scores are treated as ties.
                     </div>
                   </div>
 
@@ -873,6 +884,7 @@
     const matchDateInput = document.getElementById('matchDate');
     const gameNameInput = document.getElementById('gameName');
     const gameTypeInput = document.getElementById('gameType');
+    const scoreDirectionInput = document.getElementById('scoreDirection');
 
     const heroPlayers = document.getElementById('heroPlayers');
     const heroMatches = document.getElementById('heroMatches');
@@ -976,6 +988,7 @@
       const matchDate = matchDateInput.value;
       const gameName = gameNameInput.value.trim();
       const gameType = gameTypeInput.value;
+      const scoreDirection = scoreDirectionInput.value;
 
       if(!matchDate || !gameName){
         alert('Please enter a match date and game name.');
@@ -1016,6 +1029,7 @@
         date: matchDate,
         gameName,
         gameType,
+        scoreDirection,
         participants
       });
 
@@ -1023,6 +1037,7 @@
       playersContainer.innerHTML = '';
       playerRowCount = 0;
       matchDateInput.value = todayISO();
+      scoreDirectionInput.value = 'high';
       addPlayerRow();
       addPlayerRow();
 
@@ -1067,23 +1082,35 @@
         };
       });
 
-      const scores = enriched.map(p => p.score);
-      const maxScore = Math.max(...scores);
+      // Determine winners based on scoreDirection
+      let winningScore;
+      if(match.scoreDirection === 'low'){
+        winningScore = Math.min(...enriched.map(p => p.score));
+      } else {
+        winningScore = Math.max(...enriched.map(p => p.score));
+      }
 
-      const winners = enriched.filter(p => p.score === maxScore);
+      const winners = enriched.filter(p => p.score === winningScore);
       const avgPreHR = enriched.reduce((sum,p)=>sum + p.preHR, 0) / enriched.length;
 
       const results = enriched.map(p => {
         let outcome = 'loss';
-        if(p.score === maxScore && winners.length === 1) outcome = 'win';
-        else if(p.score === maxScore && winners.length > 1) outcome = 'tie';
+        if(p.score === winningScore && winners.length === 1) outcome = 'win';
+        else if(p.score === winningScore && winners.length > 1) outcome = 'tie';
 
         const player = ensurePlayer(p.name);
         const opponents = enriched.filter(o => o.name !== p.name);
 
         const avgOppHR = opponents.reduce((sum,o)=>sum + o.preHR, 0) / opponents.length;
         const avgOppScore = opponents.reduce((sum,o)=>sum + o.score, 0) / opponents.length;
-        const pointDiff = p.score - avgOppScore;
+
+        // For pointDiff, invert if low score wins to keep positive margin for winning
+        let pointDiff;
+        if(match.scoreDirection === 'low'){
+          pointDiff = (avgOppScore - p.score);
+        } else {
+          pointDiff = (p.score - avgOppScore);
+        }
 
         const resultBase =
           outcome === 'win' ? 24 :
@@ -1124,6 +1151,7 @@
           date: match.date,
           gameName: match.gameName,
           gameType: match.gameType,
+          scoreDirection: match.scoreDirection,
           ...playerResult
         });
 
@@ -1135,6 +1163,7 @@
         date: match.date,
         gameName: match.gameName,
         gameType: match.gameType,
+        scoreDirection: match.scoreDirection,
         playerCount: enriched.length,
         averagePreHR: Math.round(avgPreHR),
         results
@@ -1214,6 +1243,7 @@
               <div class="chips">
                 <div class="chip">${formatDate(match.date)}</div>
                 <div class="chip">${match.playerCount} players</div>
+                <div class="chip">Score Direction: ${match.scoreDirection === 'low' ? 'Low Score Wins' : 'High Score Wins'}</div>
                 <div class="chip">Avg pre-match HR: ${match.averagePreHR}</div>
               </div>
             </div>
