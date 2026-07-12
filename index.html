@@ -551,6 +551,7 @@
       border:1px solid rgba(255,255,255,.08);
       background:
         linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+      position:relative;
     }
 
     .history-top{
@@ -604,6 +605,25 @@
     }
 
     .result-row strong{ color:var(--text); }
+
+    .edit-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: var(--gold);
+      border: none;
+      border-radius: 12px;
+      padding: 6px 12px;
+      font-weight: 700;
+      color: var(--bg);
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      font-size: 0.85rem;
+    }
+    .edit-btn:hover {
+      background: var(--crimson-2);
+      color: var(--text);
+    }
 
     .footer{
       padding:1rem 0 3rem;
@@ -776,6 +796,7 @@
               </div>
               <div class="panel-inner">
                 <form id="matchForm">
+                  <input type="hidden" id="editMatchId" value="" />
                   <div class="grid-2">
                     <div class="field">
                       <label for="matchDate">Match Date</label>
@@ -821,8 +842,9 @@
 
                   <div class="actions-row">
                     <button class="ghost" type="button" id="addPlayerBtn">+ Add Player</button>
-                    <button class="btn-primary" type="submit">Save Match & Update HR</button>
+                    <button class="btn-primary" type="submit" id="saveMatchBtn">Save Match & Update HR</button>
                     <button class="danger" type="button" id="resetDataBtn">Reset All Data</button>
+                    <button class="btn-secondary" type="button" id="cancelEditBtn" style="display:none;">Cancel Edit</button>
                   </div>
                 </form>
               </div>
@@ -885,6 +907,9 @@
     const gameNameInput = document.getElementById('gameName');
     const gameTypeInput = document.getElementById('gameType');
     const scoreDirectionInput = document.getElementById('scoreDirection');
+    const editMatchIdInput = document.getElementById('editMatchId');
+    const saveMatchBtn = document.getElementById('saveMatchBtn');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
 
     const heroPlayers = document.getElementById('heroPlayers');
     const heroMatches = document.getElementById('heroMatches');
@@ -942,6 +967,8 @@
       document.querySelectorAll('[data-nav]').forEach(btn=>{
         btn.addEventListener('click', ()=>showPage(btn.dataset.nav));
       });
+
+      cancelEditBtn.addEventListener('click', cancelEdit);
     }
 
     function showPage(page){
@@ -989,6 +1016,7 @@
       const gameName = gameNameInput.value.trim();
       const gameType = gameTypeInput.value;
       const scoreDirection = scoreDirectionInput.value;
+      const editMatchId = editMatchIdInput.value;
 
       if(!matchDate || !gameName){
         alert('Please enter a match date and game name.');
@@ -1025,22 +1053,25 @@
         uniqueNames.add(key);
       }
 
-      recordMatch({
-        date: matchDate,
-        gameName,
-        gameType,
-        scoreDirection,
-        participants
-      });
+      if(editMatchId){
+        updateMatch(editMatchId, {
+          date: matchDate,
+          gameName,
+          gameType,
+          scoreDirection,
+          participants
+        });
+      } else {
+        recordMatch({
+          date: matchDate,
+          gameName,
+          gameType,
+          scoreDirection,
+          participants
+        });
+      }
 
-      matchForm.reset();
-      playersContainer.innerHTML = '';
-      playerRowCount = 0;
-      matchDateInput.value = todayISO();
-      scoreDirectionInput.value = 'high';
-      addPlayerRow();
-      addPlayerRow();
-
+      resetForm();
       renderAll();
       showPage('app');
     });
@@ -1055,6 +1086,19 @@
       renderAll();
       showPage('app');
     });
+
+    function resetForm(){
+      matchForm.reset();
+      playersContainer.innerHTML = '';
+      playerRowCount = 0;
+      matchDateInput.value = todayISO();
+      scoreDirectionInput.value = 'high';
+      editMatchIdInput.value = '';
+      addPlayerRow();
+      addPlayerRow();
+      cancelEditBtn.style.display = 'none';
+      saveMatchBtn.textContent = 'Save Match & Update HR';
+    }
 
     function ensurePlayer(name){
       if(!state.players[name]){
@@ -1074,6 +1118,37 @@
     }
 
     function recordMatch(match){
+      // Add match and recalc ratings fresh
+      state.matches.push({
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+        ...match
+      });
+      recalcRatings();
+      saveState();
+    }
+
+    function updateMatch(matchId, updatedMatch){
+      // Remove old match data and recalc ratings fresh
+      const idx = state.matches.findIndex(m => m.id === matchId);
+      if(idx === -1) return;
+
+      state.matches[idx] = { id: matchId, ...updatedMatch };
+      recalcRatings();
+      saveState();
+    }
+
+    function recalcRatings(){
+      // Reset all players
+      state.players = {};
+      // Sort matches by date ascending to apply ratings chronologically
+      const sortedMatches = [...state.matches].sort((a,b) => new Date(a.date) - new Date(b.date));
+
+      for(const match of sortedMatches){
+        applyMatchRatings(match);
+      }
+    }
+
+    function applyMatchRatings(match){
       const enriched = match.participants.map(p => {
         const player = ensurePlayer(p.name);
         return {
@@ -1158,19 +1233,7 @@
         return playerResult;
       });
 
-      state.matches.push({
-        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
-        date: match.date,
-        gameName: match.gameName,
-        gameType: match.gameType,
-        scoreDirection: match.scoreDirection,
-        playerCount: enriched.length,
-        averagePreHR: Math.round(avgPreHR),
-        results
-      });
-
-      state.matches.sort((a,b) => new Date(b.date) - new Date(a.date));
-      saveState();
+      match.results = results;
     }
 
     function renderAll(){
@@ -1235,7 +1298,8 @@
       }
 
       historyListEl.innerHTML = matches.map(match => `
-        <article class="history-item">
+        <article class="history-item" data-match-id="${match.id}">
+          <button class="edit-btn" aria-label="Edit match" title="Edit match" data-match-id="${match.id}">Edit</button>
           <div class="history-top">
             <div>
               <strong>${escapeHtml(match.gameName)}</strong>
@@ -1244,7 +1308,7 @@
                 <div class="chip">${formatDate(match.date)}</div>
                 <div class="chip">${match.playerCount} players</div>
                 <div class="chip">Score Direction: ${match.scoreDirection === 'low' ? 'Low Score Wins' : 'High Score Wins'}</div>
-                <div class="chip">Avg pre-match HR: ${match.averagePreHR}</div>
+                <div class="chip">Avg pre-match HR: ${match.averagePreHR || '-'}</div>
               </div>
             </div>
           </div>
@@ -1267,6 +1331,43 @@
           </div>
         </article>
       `).join('');
+
+      // Bind edit buttons
+      document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const matchId = btn.dataset.matchId;
+          startEditMatch(matchId);
+        });
+      });
+    }
+
+    function startEditMatch(matchId){
+      const match = state.matches.find(m => m.id === matchId);
+      if(!match) return;
+
+      // Reset form and fill with match data
+      resetForm();
+
+      editMatchIdInput.value = match.id;
+      matchDateInput.value = match.date;
+      gameNameInput.value = match.gameName;
+      gameTypeInput.value = match.gameType;
+      scoreDirectionInput.value = match.scoreDirection;
+
+      playersContainer.innerHTML = '';
+      playerRowCount = 0;
+      for(const p of match.participants){
+        addPlayerRow(p.name, p.score);
+      }
+
+      saveMatchBtn.textContent = 'Update Match & Recalculate HR';
+      cancelEditBtn.style.display = 'inline-block';
+      showPage('app');
+      window.scrollTo({top:0, behavior:'smooth'});
+    }
+
+    function cancelEdit(){
+      resetForm();
     }
 
     function formatDate(value){
