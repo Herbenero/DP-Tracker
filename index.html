@@ -1278,36 +1278,24 @@
     }
 
     async function syncMatchToSheety(match){
-      const compactPlayers = match.players.map(player => ({
-        name: player.name,
-        score: player.score
-      }));
+  const compactPlayers = match.players.map(player => ({
+    name: player.name,
+    score: player.score
+  }));
 
-      const payload = {
-        matches: {
-          matchId: match.id,
-          date: match.date,
-          game: match.game,
-          gameType: match.gameType,
-          scoreDirection: match.scoreDirection,
-          players: JSON.stringify(compactPlayers)
-        }
-      };
-
-      const response = await fetch(ONLINE_STORAGE_URL, {
-        method: 'POST',
-        headers: ONLINE_STORAGE_HEADERS,
-        body: JSON.stringify(payload)
-      });
-
-      if(!response.ok){
-        const errorText = await response.text();
-        throw new Error(`Sheety save failed with status ${response.status}: ${errorText}`);
-      }
-
-      usingOnlineStorage = true;
+  const payload = {
+    match: { // Changed from 'matches' to 'match'
+      matchId: match.id,
+      date: match.date,
+      game: match.game,
+      gameType: match.gameType,
+      scoreDirection: match.scoreDirection,
+      players: JSON.stringify(compactPlayers)
     }
+  };
 
+  // ... rest of your fetch logic
+}
     async function handleMatchSubmit(event){
       event.preventDefault();
 
