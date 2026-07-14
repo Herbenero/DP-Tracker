@@ -161,6 +161,13 @@
 
     button:active, .btn:active{ transform:translateY(0) scale(.99); }
 
+    button:disabled{
+      opacity:.6;
+      cursor:not-allowed;
+      transform:none;
+      box-shadow:none;
+    }
+
     .hero{
       padding:clamp(2.5rem, 5vw, 4.25rem) 0 2rem;
       position:relative;
@@ -746,7 +753,7 @@
               <button class="btn-secondary" type="button" data-nav="history">Open History Page</button>
             </div>
             <div class="storage-status" id="storageStatus">
-              <strong>Storage:</strong> Online sync enabled.
+              <strong>Storage:</strong> Loading…
             </div>
           </div>
         </div>
@@ -906,19 +913,22 @@
 
   <footer class="footer">
     <div class="wrap">
-      Hellcastle Rating (HR) — baseline 1000. Ratings are now stored in an attached online JSON document via JSONBin.
+      Hellcastle Rating (HR) — baseline 1000. Ratings are stored in attached online JSON storage with local fallback if sync fails.
     </div>
   </footer>
 
   <script>
+    const STORAGE_KEY = 'hellcastle-rating-app-v1';
     const ONLINE_STORAGE_URL = 'https://api.jsonbin.io/v3/b/687586fcad19ca34f8700f14';
     const ONLINE_STORAGE_HEADERS = {
       'X-Access-Key': '$2b$10$dDxg7Q0S4Y6II5fqf0EhH.WiCwVu1mfsBc8EqzoZZkIR4vfpQcnfu',
+      'X-Bin-Meta': 'false',
       'Content-Type': 'application/json'
     };
     const DEFAULT_STATE = { players: {}, matches: [] };
 
     let state = structuredCloneSafe(DEFAULT_STATE);
+    let usingOnlineStorage = false;
 
     const playersContainer = document.getElementById('playersContainer');
     const leaderboardEl = document.getElementById('leaderboard');
@@ -965,9 +975,13 @@
     }
 
     async function loadState(){
+      const localState = loadLocalState();
+
       try{
-        const response = await fetch(ONLINE_STORAGE_URL, {
-          headers: ONLINE_STORAGE_HEADERS
+        const response = await fetch(ONLINE_STORAGE_URL + '/latest', {
+          method: 'GET',
+          headers: ONLINE_STORAGE_HEADERS,
+          cache: 'no-store'
         });
 
         if(!response.ok){
@@ -975,34 +989,75 @@
         }
 
         const payload = await response.json();
-        state = normalizeState(payload.record || DEFAULT_STATE);
+        const onlineRecord = normalizeState(payload.record || payload || DEFAULT_STATE);
+        state = onlineRecord;
+        usingOnlineStorage = true;
+        saveLocalState();
         setStorageStatus('Online sync active. Changes save to attached storage.');
       } catch (error) {
         console.error(error);
-        state = structuredCloneSafe(DEFAULT_STATE);
-        setStorageStatus('Online storage unavailable. Showing empty in-memory data for this session only.');
+        state = localState;
+        usingOnlineStorage = false;
+        setStorageStatus('Online sync unavailable. Using local backup storage on this device.');
       }
     }
 
     async function saveState(){
-      const response = await fetch(ONLINE_STORAGE_URL, {
-        method: 'PUT',
-        headers: ONLINE_STORAGE_HEADERS,
-        body: JSON.stringify(state)
-      });
+      saveLocalState();
 
-      if(!response.ok){
-        throw new Error(`Save failed with status ${response.status}`);
+      try{
+        const response = await fetch(ONLINE_STORAGE_URL, {
+          method: 'PUT',
+          headers: ONLINE_STORAGE_HEADERS,
+          body: JSON.stringify(state)
+        });
+
+        if(!response.ok){
+          throw new Error(`Save failed with status ${response.status}`);
+        }
+
+        usingOnlineStorage = true;
+        setStorageStatus('Online sync active. All changes saved.');
+      } catch (error) {
+        console.error(error);
+        usingOnlineStorage = false;
+        setStorageStatus('Online save failed. Changes were saved locally on this device only.');
       }
+    }
 
-      setStorageStatus('Online sync active. All changes saved.');
+    function loadLocalState(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(raw){
+          return normalizeState(JSON.parse(raw));
+        }
+      } catch (error) {
+        console.error(error);
+      }
+      return structuredCloneSafe(DEFAULT_STATE);
+    }
+
+    function saveLocalState(){
+      try{
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (error) {
+        console.error(error);
+      }
     }
 
     function normalizeState(input){
-      return {
+      const normalized = {
         players: input && typeof input.players === 'object' && input.players ? input.players : {},
         matches: Array.isArray(input && input.matches) ? input.matches : []
       };
+
+      normalized.matches = normalized.matches.map(match => ({
+        ...match,
+        players: Array.isArray(match.players) ? match.players : [],
+        results: Array.isArray(match.results) ? match.results : []
+      }));
+
+      return normalized;
     }
 
     function setStorageStatus(message){
@@ -1088,6 +1143,11 @@
         return;
       }
 
+      if(!gameNameInput.value.trim()){
+        alert('Please enter a game name.');
+        return;
+      }
+
       const match = {
         id: editMatchIdInput.value || `match-${Date.now()}`,
         date: matchDateInput.value,
@@ -1105,8 +1165,8 @@
         resetForm();
       } catch (error) {
         console.error(error);
-        setStorageStatus('Save failed. Your latest change was not synced.');
-        alert('Could not save to online storage. Please try again.');
+        setStorageStatus('Save failed unexpectedly. Your latest change may not have synced online.');
+        alert('Could not save changes. Please try again.');
       }
     }
 
@@ -1120,8 +1180,8 @@
         resetForm();
       } catch (error) {
         console.error(error);
-        setStorageStatus('Reset failed. Online data was not changed.');
-        alert('Could not reset online storage. Please try again.');
+        setStorageStatus('Reset failed unexpectedly.');
+        alert('Could not reset data. Please try again.');
       }
     }
 
@@ -1234,6 +1294,7 @@
           <div class="chips">
             <span class="chip">${match.players.length} players</span>
             <span class="chip">${match.scoreDirection === 'low' ? 'Low score wins' : 'High score wins'}</span>
+            <span class="chip">${usingOnlineStorage ? 'Online synced' : 'Local backup only'}</span>
           </div>
           <div class="history-results">
             ${(match.results || []).map(result => `
