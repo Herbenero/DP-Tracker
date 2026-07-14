@@ -978,7 +978,7 @@
       const localState = loadLocalState();
 
       try{
-        const response = await fetch(ONLINE_STORAGE_URL + '/latest', {
+        const response = await fetch(ONLINE_STORAGE_URL, {
           method: 'GET',
           headers: ONLINE_STORAGE_HEADERS,
           cache: 'no-store'
