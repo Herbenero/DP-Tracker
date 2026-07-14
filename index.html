@@ -1124,7 +1124,6 @@
 
     async function saveState(){
       saveLocalState(state);
-      setStorageStatus('Saved locally.');
     }
 
     function bindNav(){
@@ -1284,7 +1283,7 @@
 
     async function syncMatchToSheety(match){
       const payload = {
-        match: {
+        matches: {
           matchId: match.id,
           date: match.date,
           game: match.game,
