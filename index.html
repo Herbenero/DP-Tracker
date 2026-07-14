@@ -1072,10 +1072,6 @@
     function convertSheetyRowsToState(rows){
       const matches = rows
         .map(row => {
-          if(row.matchJson){
-            return sanitizeMatch(parseMaybeJSON(row.matchJson));
-          }
-
           const players = parseMaybeJSON(row.players, []);
           return sanitizeMatch({
             id: row.matchId || row.id,
@@ -1282,6 +1278,11 @@
     }
 
     async function syncMatchToSheety(match){
+      const compactPlayers = match.players.map(player => ({
+        name: player.name,
+        score: player.score
+      }));
+
       const payload = {
         matches: {
           matchId: match.id,
@@ -1289,8 +1290,7 @@
           game: match.game,
           gameType: match.gameType,
           scoreDirection: match.scoreDirection,
-          players: JSON.stringify(match.players),
-          matchJson: JSON.stringify(match)
+          players: JSON.stringify(compactPlayers)
         }
       };
 
@@ -1301,7 +1301,8 @@
       });
 
       if(!response.ok){
-        throw new Error(`Sheety save failed with status ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`Sheety save failed with status ${response.status}: ${errorText}`);
       }
 
       usingOnlineStorage = true;
