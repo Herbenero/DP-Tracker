@@ -978,7 +978,7 @@
       const localState = loadLocalState();
 
       try{
-        const response = await fetch(ONLINE_STORAGE_URL + '/latest', {
+        const response = await fetch(https://api.sheety.co/50f7bb553f92da0130909cfa709f7862/hrMatches/matches + '/latest', {
           method: 'GET',
           headers: ONLINE_STORAGE_HEADERS,
           cache: 'no-store'
@@ -1006,7 +1006,7 @@
       saveLocalState();
 
       try{
-        const response = await fetch(ONLINE_STORAGE_URL, {
+        const response = await fetch(https://api.sheety.co/50f7bb553f92da0130909cfa709f7862/hrMatches/matches, {
           method: 'PUT',
           headers: ONLINE_STORAGE_HEADERS,
           body: JSON.stringify(state)
