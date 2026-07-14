@@ -922,6 +922,7 @@
     const ONLINE_STORAGE_URL = 'https://api.jsonbin.io/v3/b/687586fcad19ca34f8700f14';
     const ONLINE_STORAGE_HEADERS = {
       'X-Access-Key': '$2b$10$dDxg7Q0S4Y6II5fqf0EhH.WiCwVu1mfsBc8EqzoZZkIR4vfpQcnfu',
+      'X-Master-Key': '$2b$10$dDxg7Q0S4Y6II5fqf0EhH.WiCwVu1mfsBc8EqzoZZkIR4vfpQcnfu',
       'X-Bin-Meta': 'false',
       'Content-Type': 'application/json'
     };
@@ -978,14 +979,30 @@
       const localState = loadLocalState();
 
       try{
-        const response = await fetch(ONLINE_STORAGE_URL, {
+        const response = await fetch(ONLINE_STORAGE_URL + '/latest', {
           method: 'GET',
           headers: ONLINE_STORAGE_HEADERS,
           cache: 'no-store'
         });
 
         if(!response.ok){
-          throw new Error(`Load failed with status ${response.status}`);
+          const fallbackResponse = await fetch(ONLINE_STORAGE_URL, {
+            method: 'GET',
+            headers: ONLINE_STORAGE_HEADERS,
+            cache: 'no-store'
+          });
+
+          if(!fallbackResponse.ok){
+            throw new Error(`Load failed with status ${response.status}`);
+          }
+
+          const fallbackPayload = await fallbackResponse.json();
+          const fallbackRecord = normalizeState(fallbackPayload.record || fallbackPayload || DEFAULT_STATE);
+          state = fallbackRecord;
+          usingOnlineStorage = true;
+          saveLocalState();
+          setStorageStatus('Online sync active. Changes save to attached storage.');
+          return;
         }
 
         const payload = await response.json();
