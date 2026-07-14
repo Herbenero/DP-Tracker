@@ -1397,3 +1397,46 @@
   </script>
 </body>
 </html>
+const sheetyUrl = "https://api.sheety.co/YOUR_PROJECT_ID/hrMatches/matches";
+
+function saveMatchToCloud(matchDate, gameName, category, playersArray) {
+  // Sheety expects the root object key to match your tab name ("match")
+  const body = {
+    match: {
+      date: matchDate,
+      game: gameName,
+      category: category,
+      scores: JSON.stringify(playersArray) // Stores players and scores as text
+    }
+  };
+
+  fetch(sheetyUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log("Match saved to cloud:", data);
+    // Refresh your UI or recalculate leaderboard here
+  })
+  .catch(error => console.error("Error saving match:", error));
+}
+function loadMatchesFromCloud() {
+  fetch(sheetyUrl)
+  .then(response => response.json())
+  .then(data => {
+    // Sheety returns rows inside an array named after your tab ("matches")
+    const matches = data.matches; 
+    
+    matches.forEach(match => {
+      const players = JSON.parse(match.scores); // Turn the text string back into an array
+      console.log(`Loaded ${match.game} played on ${match.date}`);
+      
+      // Run your HR calculation formula on these players/scores here...
+    });
+  })
+  .catch(error => console.error("Error loading matches:", error));
+}
