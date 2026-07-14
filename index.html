@@ -859,7 +859,7 @@
                   <div class="field">
                     <label>Players & Scores</label>
                     <div class="help">
-                      Enter all player names in the match. Scores are used to determine placements. Highest or lowest score wins depending on the selected score direction. Equal top scores are treated as ties for first place.
+                      Enter all player names in the match. Scores are used to determine placements. Highest or lowest score wins depending on the selected score direction. Equal top scores are treated as ties.
                     </div>
                   </div>
 
@@ -913,17 +913,14 @@
 
   <footer class="footer">
     <div class="wrap">
-      Hellcastle Rating (HR) — baseline 1000. Ratings are stored in attached online JSON storage with local fallback if sync fails.
+      Hellcastle Rating (HR) — baseline 1000. Ratings are stored in Sheety online storage with local fallback if sync fails.
     </div>
   </footer>
 
   <script>
     const STORAGE_KEY = 'hellcastle-rating-app-v1';
-    const ONLINE_STORAGE_URL = 'https://api.jsonbin.io/v3/b/687586fcad19ca34f8700f14';
+    const ONLINE_STORAGE_URL = 'https://api.sheety.co/50f7bb553f92da0130909cfa709f7862/hrMatches/matches';
     const ONLINE_STORAGE_HEADERS = {
-      'X-Access-Key': '$2b$10$dDxg7Q0S4Y6II5fqf0EhH.WiCwVu1mfsBc8EqzoZZkIR4vfpQcnfu',
-      'X-Master-Key': '$2b$10$dDxg7Q0S4Y6II5fqf0EhH.WiCwVu1mfsBc8EqzoZZkIR4vfpQcnfu',
-      'X-Bin-Meta': 'false',
       'Content-Type': 'application/json'
     };
     const DEFAULT_STATE = { players: {}, matches: [] };
@@ -975,71 +972,20 @@
       return JSON.parse(JSON.stringify(value));
     }
 
-    async function loadState(){
-      const localState = loadLocalState();
-
-      try{
-        const response = await fetch(ONLINE_STORAGE_URL + '/latest', {
-          method: 'GET',
-          headers: ONLINE_STORAGE_HEADERS,
-          cache: 'no-store'
-        });
-
-        if(!response.ok){
-          const fallbackResponse = await fetch(ONLINE_STORAGE_URL, {
-            method: 'GET',
-            headers: ONLINE_STORAGE_HEADERS,
-            cache: 'no-store'
-          });
-
-          if(!fallbackResponse.ok){
-            throw new Error(`Load failed with status ${response.status}`);
-          }
-
-          const fallbackPayload = await fallbackResponse.json();
-          const fallbackRecord = normalizeState(fallbackPayload.record || fallbackPayload || DEFAULT_STATE);
-          state = fallbackRecord;
-          usingOnlineStorage = true;
-          saveLocalState();
-          setStorageStatus('Online sync active. Changes save to attached storage.');
-          return;
-        }
-
-        const payload = await response.json();
-        const onlineRecord = normalizeState(payload.record || payload || DEFAULT_STATE);
-        state = onlineRecord;
-        usingOnlineStorage = true;
-        saveLocalState();
-        setStorageStatus('Online sync active. Changes save to attached storage.');
-      } catch (error) {
-        console.error(error);
-        state = localState;
-        usingOnlineStorage = false;
-        setStorageStatus('Online sync unavailable. Using local storage fallback on this device.');
-      }
+    function normalizeState(value){
+      const safe = value && typeof value === 'object' ? value : DEFAULT_STATE;
+      return {
+        players: safe.players && typeof safe.players === 'object' ? safe.players : {},
+        matches: Array.isArray(safe.matches) ? safe.matches : []
+      };
     }
 
-    async function saveState(){
-      saveLocalState();
+    function todayISO(){
+      return new Date().toISOString().slice(0, 10);
+    }
 
-      try{
-        const response = await fetch(ONLINE_STORAGE_URL, {
-          method: 'PUT',
-          headers: ONLINE_STORAGE_HEADERS,
-          body: JSON.stringify(state)
-        });
-
-        if(!response.ok){
-          throw new Error(`Save failed with status ${response.status}`);
-        }
-
-        usingOnlineStorage = true;
-        setStorageStatus('Online sync active. Latest changes saved successfully.');
-      } catch (error) {
-        console.error(error);
-        usingOnlineStorage = false;
-        setStorageStatus('Could not save online. Your changes are still stored locally on this device.');
-      }
+    function setStorageStatus(message){
+      storageStatusEl.innerHTML = `<strong>Storage:</strong> ${message}`;
     }
 
     function loadLocalState(){
@@ -1047,49 +993,165 @@
         const raw = localStorage.getItem(STORAGE_KEY);
         if(!raw) return structuredCloneSafe(DEFAULT_STATE);
         return normalizeState(JSON.parse(raw));
-      } catch(error){
-        console.error(error);
+      }catch(error){
+        console.warn('Failed to load local state:', error);
         return structuredCloneSafe(DEFAULT_STATE);
       }
     }
 
-    function saveLocalState(){
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    function saveLocalState(nextState){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizeState(nextState)));
     }
 
-    function normalizeState(raw){
-      const next = raw && typeof raw === 'object' ? raw : {};
+    function parseMaybeJSON(value, fallback = null){
+      if(typeof value !== 'string' || !value.trim()) return fallback;
+      try{
+        return JSON.parse(value);
+      }catch{
+        return fallback;
+      }
+    }
+
+    function sanitizeMatch(rawMatch){
+      if(!rawMatch || typeof rawMatch !== 'object') return null;
+
+      const players = Array.isArray(rawMatch.players)
+        ? rawMatch.players.map(player => ({
+            name: String(player?.name || '').trim(),
+            score: Number(player?.score || 0),
+            result: player?.result || '',
+            delta: Number(player?.delta || 0),
+            ratingAfter: Number(player?.ratingAfter || 1000)
+          })).filter(player => player.name)
+        : [];
+
+      if(players.length < 2) return null;
+
       return {
-        players: next.players && typeof next.players === 'object' ? next.players : {},
-        matches: Array.isArray(next.matches) ? next.matches : []
+        id: String(rawMatch.id || rawMatch.matchId || crypto.randomUUID()),
+        date: String(rawMatch.date || todayISO()),
+        game: String(rawMatch.game || rawMatch.gameName || 'Unknown Game'),
+        gameType: String(rawMatch.gameType || 'Other'),
+        scoreDirection: rawMatch.scoreDirection === 'low' ? 'low' : 'high',
+        players
       };
     }
 
+    function rebuildPlayersFromMatches(matches){
+      const sortedMatches = [...matches].sort((a, b) => {
+        const dateCompare = String(a.date).localeCompare(String(b.date));
+        if(dateCompare !== 0) return dateCompare;
+        return String(a.id).localeCompare(String(b.id));
+      });
+
+      const players = {};
+
+      for(const match of sortedMatches){
+        for(const player of match.players){
+          if(!players[player.name]){
+            players[player.name] = {
+              name: player.name,
+              rating: 1000,
+              matches: 0,
+              wins: 0,
+              losses: 0,
+              ties: 0,
+              pointsFor: 0,
+              pointDiff: 0,
+              history: []
+            };
+          }
+        }
+
+        applyMatchToPlayers(players, match);
+      }
+
+      return players;
+    }
+
+    function convertSheetyRowsToState(rows){
+      const matches = rows
+        .map(row => {
+          if(row.matchJson){
+            return sanitizeMatch(parseMaybeJSON(row.matchJson));
+          }
+
+          const players = parseMaybeJSON(row.players, []);
+          return sanitizeMatch({
+            id: row.matchId || row.id,
+            date: row.date,
+            game: row.game,
+            gameType: row.gameType,
+            scoreDirection: row.scoreDirection,
+            players
+          });
+        })
+        .filter(Boolean);
+
+      return normalizeState({
+        matches,
+        players: rebuildPlayersFromMatches(matches)
+      });
+    }
+
+    async function loadState(){
+      const localState = loadLocalState();
+
+      try{
+        const response = await fetch(ONLINE_STORAGE_URL, {
+          method: 'GET',
+          headers: ONLINE_STORAGE_HEADERS,
+          cache: 'no-store'
+        });
+
+        if(!response.ok){
+          throw new Error(`Load failed with status ${response.status}`);
+        }
+
+        const payload = await response.json();
+        const rows = Array.isArray(payload.matches) ? payload.matches : [];
+        state = convertSheetyRowsToState(rows);
+        usingOnlineStorage = true;
+        saveLocalState(state);
+        setStorageStatus(`Connected to Sheety (${rows.length} synced match${rows.length === 1 ? '' : 'es'}).`);
+      }catch(error){
+        console.error('Error loading Sheety data:', error);
+        state = normalizeState(localState || DEFAULT_STATE);
+        usingOnlineStorage = false;
+        setStorageStatus('Sheety unavailable. Using local browser storage.');
+      }
+    }
+
+    async function saveState(){
+      saveLocalState(state);
+      setStorageStatus('Saved locally.');
+    }
+
     function bindNav(){
+      const navButtons = document.querySelectorAll('[data-nav]');
+      navButtons.forEach(button => {
+        button.addEventListener('click', () => showPage(button.dataset.nav));
+      });
+
       goAppBtn.addEventListener('click', () => showPage('app'));
       goHistoryBtn.addEventListener('click', () => showPage('history'));
-      brandHome.addEventListener('click', (event) => {
+      brandHome.addEventListener('click', event => {
         event.preventDefault();
         showPage('app');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
-
-      document.querySelectorAll('[data-nav]').forEach((button) => {
-        button.addEventListener('click', () => showPage(button.dataset.nav));
-      });
     }
 
-    function showPage(pageName){
-      const showApp = pageName === 'app';
-      pageApp.classList.toggle('active', showApp);
-      pageHistory.classList.toggle('active', !showApp);
+    function showPage(page){
+      pageApp.classList.toggle('active', page === 'app');
+      pageHistory.classList.toggle('active', page === 'history');
     }
 
     function bindForm(){
       addPlayerBtn.addEventListener('click', () => addPlayerRow());
+      cancelEditBtn.addEventListener('click', resetForm);
       resetDataBtn.addEventListener('click', resetAllData);
-      cancelEditBtn.addEventListener('click', cancelEdit);
-      matchForm.addEventListener('submit', handleSubmit);
+      matchForm.addEventListener('submit', handleMatchSubmit);
     }
 
     function addPlayerRow(player = { name: '', score: '' }){
@@ -1100,122 +1162,224 @@
       row.innerHTML = `
         <div class="field">
           <label>Player Name</label>
-          <input type="text" class="player-name" placeholder="Player name" value="${escapeHtml(player.name || '')}" required />
+          <input type="text" class="player-name" value="${escapeHtml(player.name || '')}" placeholder="Enter player name" required />
         </div>
         <div class="field">
           <label>Score</label>
-          <input type="number" class="player-score" placeholder="0" value="${player.score ?? ''}" required />
+          <input type="number" class="player-score" value="${escapeHtml(player.score ?? '')}" placeholder="0" required />
         </div>
-        <button class="ghost remove-player-btn" type="button">Remove</button>
+        <button class="danger" type="button">Remove</button>
       `;
 
-      row.querySelector('.remove-player-btn').addEventListener('click', () => {
+      row.querySelector('button').addEventListener('click', () => {
         row.remove();
+        if(playersContainer.children.length < 2){
+          addPlayerRow();
+        }
       });
 
       playersContainer.appendChild(row);
     }
 
-    async function handleSubmit(event){
+    function escapeHtml(value){
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function collectPlayersFromForm(){
+      const rows = [...playersContainer.querySelectorAll('.player-row')];
+      return rows.map(row => ({
+        name: row.querySelector('.player-name').value.trim(),
+        score: Number(row.querySelector('.player-score').value)
+      })).filter(player => player.name);
+    }
+
+    function determineResults(players, scoreDirection){
+      const scores = players.map(player => player.score);
+      const targetScore = scoreDirection === 'low' ? Math.min(...scores) : Math.max(...scores);
+      const winningCount = players.filter(player => player.score === targetScore).length;
+
+      return players.map(player => ({
+        ...player,
+        result: player.score === targetScore
+          ? (winningCount > 1 ? 'Tie' : 'Win')
+          : 'Loss'
+      }));
+    }
+
+    function calculateDelta(player, matchPlayers, existingPlayers){
+      const resultBase = player.result === 'Win' ? 24 : player.result === 'Tie' ? 10 : -8;
+      const scoreValues = matchPlayers.map(entry => entry.score);
+      const topScore = Math.max(...scoreValues);
+      const lowScore = Math.min(...scoreValues);
+      const spread = Math.max(1, topScore - lowScore);
+      const marginBonus = player.result === 'Loss' ? 0 : Math.round((Math.abs(player.score - (player.result === 'Win' ? lowScore : topScore)) / spread) * 6);
+      const multiplayerBonus = Math.max(0, matchPlayers.length - 2) * 2;
+
+      const playerRating = existingPlayers[player.name]?.rating ?? 1000;
+      const opponents = matchPlayers.filter(entry => entry.name !== player.name);
+      const averageOpponentRating = opponents.length
+        ? opponents.reduce((sum, opponent) => sum + (existingPlayers[opponent.name]?.rating ?? 1000), 0) / opponents.length
+        : 1000;
+      const strengthBonus = Math.round((averageOpponentRating - playerRating) / 40);
+      const volumeBonus = Math.min(6, Math.floor((existingPlayers[player.name]?.matches ?? 0) / 5));
+
+      return resultBase + marginBonus + multiplayerBonus + strengthBonus + volumeBonus;
+    }
+
+    function applyMatchToPlayers(playersMap, match){
+      const evaluatedPlayers = determineResults(match.players, match.scoreDirection).map(player => {
+        const delta = calculateDelta(player, match.players, playersMap);
+        const current = playersMap[player.name];
+        const ratingAfter = Math.max(0, Math.round((current?.rating ?? 1000) + delta));
+        return { ...player, delta, ratingAfter };
+      });
+
+      match.players = evaluatedPlayers;
+
+      for(const player of evaluatedPlayers){
+        const record = playersMap[player.name] || {
+          name: player.name,
+          rating: 1000,
+          matches: 0,
+          wins: 0,
+          losses: 0,
+          ties: 0,
+          pointsFor: 0,
+          pointDiff: 0,
+          history: []
+        };
+
+        record.matches += 1;
+        record.rating = player.ratingAfter;
+        record.pointsFor += player.score;
+        record.wins += player.result === 'Win' ? 1 : 0;
+        record.losses += player.result === 'Loss' ? 1 : 0;
+        record.ties += player.result === 'Tie' ? 1 : 0;
+        record.history.push({
+          matchId: match.id,
+          date: match.date,
+          game: match.game,
+          score: player.score,
+          result: player.result,
+          delta: player.delta,
+          ratingAfter: player.ratingAfter
+        });
+
+        playersMap[player.name] = record;
+      }
+
+      for(const player of evaluatedPlayers){
+        const opponents = evaluatedPlayers.filter(entry => entry.name !== player.name);
+        const averageOpponentScore = opponents.length
+          ? opponents.reduce((sum, opponent) => sum + opponent.score, 0) / opponents.length
+          : player.score;
+        playersMap[player.name].pointDiff += Math.round(player.score - averageOpponentScore);
+      }
+    }
+
+    async function syncMatchToSheety(match){
+      const payload = {
+        match: {
+          matchId: match.id,
+          date: match.date,
+          game: match.game,
+          gameType: match.gameType,
+          scoreDirection: match.scoreDirection,
+          players: JSON.stringify(match.players),
+          matchJson: JSON.stringify(match)
+        }
+      };
+
+      const response = await fetch(ONLINE_STORAGE_URL, {
+        method: 'POST',
+        headers: ONLINE_STORAGE_HEADERS,
+        body: JSON.stringify(payload)
+      });
+
+      if(!response.ok){
+        throw new Error(`Sheety save failed with status ${response.status}`);
+      }
+
+      usingOnlineStorage = true;
+    }
+
+    async function handleMatchSubmit(event){
       event.preventDefault();
 
-      const matchDate = matchDateInput.value;
-      const gameName = gameNameInput.value.trim();
-      const gameType = gameTypeInput.value;
-      const scoreDirection = scoreDirectionInput.value;
-      const players = [...playersContainer.querySelectorAll('.player-row')]
-        .map((row) => ({
-          name: row.querySelector('.player-name').value.trim(),
-          score: Number(row.querySelector('.player-score').value)
-        }))
-        .filter((player) => player.name);
-
-      if(!matchDate || !gameName || players.length < 2 || players.some((player) => Number.isNaN(player.score))){
-        alert('Please enter a date, game name, and at least two players with valid scores.');
+      const players = collectPlayersFromForm();
+      if(players.length < 2){
+        alert('Please enter at least two players.');
         return;
       }
 
       const match = {
-        id: editMatchIdInput.value || `match-${Date.now()}`,
-        date: matchDate,
-        gameName,
-        gameType,
-        scoreDirection,
+        id: editMatchIdInput.value || crypto.randomUUID(),
+        date: matchDateInput.value || todayISO(),
+        game: gameNameInput.value.trim(),
+        gameType: gameTypeInput.value,
+        scoreDirection: scoreDirectionInput.value,
         players
       };
 
-      if(editMatchIdInput.value){
-        state.matches = state.matches.filter((existingMatch) => existingMatch.id !== editMatchIdInput.value);
+      if(!match.game){
+        alert('Please enter a game name.');
+        return;
       }
 
-      state.matches.push(match);
-      state.matches.sort((a, b) => new Date(a.date) - new Date(b.date));
+      const existingMatches = state.matches.filter(existing => existing.id !== match.id);
+      const nextMatches = [...existingMatches, match].sort((a, b) => {
+        const dateCompare = String(a.date).localeCompare(String(b.date));
+        if(dateCompare !== 0) return dateCompare;
+        return String(a.id).localeCompare(String(b.id));
+      });
 
-      recomputeRatings();
+      const nextPlayers = rebuildPlayersFromMatches(nextMatches);
+      const savedMatch = nextMatches.find(entry => entry.id === match.id);
+      state = normalizeState({ matches: nextMatches, players: nextPlayers });
+
+      try{
+        await syncMatchToSheety(savedMatch);
+        setStorageStatus('Saved to Sheety and local browser storage.');
+      }catch(error){
+        console.error('Error syncing to Sheety:', error);
+        usingOnlineStorage = false;
+        setStorageStatus('Saved locally. Sheety sync failed.');
+      }
+
       await saveState();
       renderAll();
       resetForm();
       showPage('history');
     }
 
-    function recomputeRatings(){
-      const ratings = {};
-      const stats = {};
+    function resetForm(){
+      matchForm.reset();
+      editMatchIdInput.value = '';
+      matchDateInput.value = todayISO();
+      scoreDirectionInput.value = 'high';
+      playersContainer.innerHTML = '';
+      addPlayerRow();
+      addPlayerRow();
+      cancelEditBtn.style.display = 'none';
+      saveMatchBtn.textContent = 'Save Match & Update HR';
+    }
 
-      const sortedMatches = [...state.matches].sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      for(const match of sortedMatches){
-        const direction = match.scoreDirection === 'low' ? 'low' : 'high';
-        const sortedPlayers = [...match.players].sort((a, b) => direction === 'high' ? b.score - a.score : a.score - b.score);
-        const bestScore = sortedPlayers[0]?.score;
-        const worstScore = sortedPlayers[sortedPlayers.length - 1]?.score;
-
-        match.results = match.players.map((player) => {
-          const currentRating = ratings[player.name] ?? 1000;
-          const opponentRatings = match.players
-            .filter((opponent) => opponent.name !== player.name)
-            .map((opponent) => ratings[opponent.name] ?? 1000);
-          const averageOpponentRating = opponentRatings.length
-            ? opponentRatings.reduce((sum, rating) => sum + rating, 0) / opponentRatings.length
-            : 1000;
-
-          let resultScore = -8;
-          const isBest = player.score === bestScore;
-          const tieCount = match.players.filter((entry) => entry.score === bestScore).length;
-          if(isBest && tieCount > 1) resultScore = 10;
-          else if(isBest) resultScore = 24;
-
-          const margin = direction === 'high' ? player.score - worstScore : worstScore - player.score;
-          const pointsScore = player.score * 0.25;
-          const marginBonus = Math.max(0, margin) * 0.5;
-          const multiplayerBonus = Math.max(0, (match.players.length - 2) * 2);
-          const strengthBonus = (averageOpponentRating - currentRating) * 0.04;
-          const volumeBonus = ((stats[player.name]?.matches || 0) + 1) * 0.5;
-
-          const newRating = Math.round(currentRating + resultScore + pointsScore + marginBonus + multiplayerBonus + strengthBonus + volumeBonus);
-          ratings[player.name] = newRating;
-
-          stats[player.name] = {
-            matches: (stats[player.name]?.matches || 0) + 1,
-            wins: (stats[player.name]?.wins || 0) + (resultScore === 24 ? 1 : 0),
-            ties: (stats[player.name]?.ties || 0) + (resultScore === 10 ? 1 : 0),
-            losses: (stats[player.name]?.losses || 0) + (resultScore === -8 ? 1 : 0)
-          };
-
-          return {
-            name: player.name,
-            score: player.score,
-            previousRating: currentRating,
-            newRating,
-            delta: newRating - currentRating,
-            resultScore
-          };
-        });
+    function resetAllData(){
+      if(!confirm('Reset all match and rating data? This cannot be undone locally.')){
+        return;
       }
 
-      state.players = Object.fromEntries(
-        Object.entries(ratings).map(([name, rating]) => [name, { rating, ...(stats[name] || {}) }])
-      );
+      state = structuredCloneSafe(DEFAULT_STATE);
+      saveLocalState(state);
+      usingOnlineStorage = false;
+      renderAll();
+      resetForm();
+      setStorageStatus('Local data reset. Remote Sheety rows were not deleted.');
     }
 
     function renderAll(){
@@ -1224,13 +1388,20 @@
       renderHeroStats();
     }
 
+    function renderHeroStats(){
+      const playerNames = Object.keys(state.players);
+      const gameTypes = new Set(state.matches.map(match => match.gameType));
+      heroPlayers.textContent = String(playerNames.length);
+      heroMatches.textContent = String(state.matches.length);
+      heroGames.textContent = String(gameTypes.size);
+    }
+
     function renderLeaderboard(){
-      const players = Object.entries(state.players)
-        .map(([name, data]) => ({ name, ...data }))
-        .sort((a, b) => b.rating - a.rating);
+      const players = Object.values(state.players)
+        .sort((a, b) => b.rating - a.rating || b.wins - a.wins || a.name.localeCompare(b.name));
 
       if(!players.length){
-        leaderboardEl.innerHTML = '<div class="empty">No players yet. Record a match to generate the first Hellcastle Rating leaderboard.</div>';
+        leaderboardEl.innerHTML = '<div class="empty">No players yet. Record a match to generate the live HR leaderboard.</div>';
         return;
       }
 
@@ -1239,14 +1410,14 @@
           <div class="rank-badge">${index + 1}</div>
           <div class="player-meta">
             <strong>${escapeHtml(player.name)}</strong>
-            <span>${player.wins || 0}W · ${player.losses || 0}L · ${player.ties || 0}T</span>
+            <span>${player.wins}W · ${player.losses}L · ${player.ties}T</span>
           </div>
           <div class="metric">
             <strong>${player.rating}</strong>
             <span>HR</span>
           </div>
           <div class="metric">
-            <strong>${player.matches || 0}</strong>
+            <strong>${player.matches}</strong>
             <span>Matches</span>
           </div>
         </div>
@@ -1254,117 +1425,39 @@
     }
 
     function renderHistory(){
-      const matches = [...state.matches].sort((a, b) => new Date(b.date) - new Date(a.date));
+      const matches = [...state.matches].sort((a, b) => {
+        const dateCompare = String(b.date).localeCompare(String(a.date));
+        if(dateCompare !== 0) return dateCompare;
+        return String(b.id).localeCompare(String(a.id));
+      });
 
       if(!matches.length){
-        historyListEl.innerHTML = '<div class="empty">No matches recorded yet. Save your first match to build a full historical archive.</div>';
+        historyListEl.innerHTML = '<div class="empty">No matches recorded yet. Add a match to start building the archive.</div>';
         return;
       }
 
-      historyListEl.innerHTML = matches.map((match) => `
+      historyListEl.innerHTML = matches.map(match => `
         <article class="history-item">
-          <button class="edit-btn" type="button" data-edit-id="${escapeHtml(match.id)}">Edit</button>
           <div class="history-top">
             <div>
-              <strong>${escapeHtml(match.gameName)}</strong>
-              <span>${formatDate(match.date)}</span>
+              <strong>${escapeHtml(match.game)}</strong>
+              <span>${escapeHtml(match.date)}</span>
             </div>
             <span>${escapeHtml(match.gameType)} · ${match.scoreDirection === 'low' ? 'Low score wins' : 'High score wins'}</span>
           </div>
           <div class="chips">
-            ${match.players.map((player) => `<span class="chip">${escapeHtml(player.name)}: ${player.score}</span>`).join('')}
+            ${match.players.map(player => `<span class="chip">${escapeHtml(player.name)}: ${player.score}</span>`).join('')}
           </div>
           <div class="history-results">
-            ${(match.results || []).map((result) => `
+            ${match.players.map(player => `
               <div class="result-row">
-                <strong>${escapeHtml(result.name)}</strong>
-                <span>${result.previousRating} → ${result.newRating} (${result.delta >= 0 ? '+' : ''}${result.delta})</span>
+                <strong>${escapeHtml(player.name)}</strong>
+                <span>${player.result} · ${player.delta >= 0 ? '+' : ''}${player.delta} HR · ${player.ratingAfter} total</span>
               </div>
             `).join('')}
           </div>
         </article>
       `).join('');
-
-      historyListEl.querySelectorAll('[data-edit-id]').forEach((button) => {
-        button.addEventListener('click', () => editMatch(button.dataset.editId));
-      });
-    }
-
-    function renderHeroStats(){
-      heroPlayers.textContent = String(Object.keys(state.players).length);
-      heroMatches.textContent = String(state.matches.length);
-      heroGames.textContent = String(new Set(state.matches.map((match) => match.gameType)).size);
-    }
-
-    function editMatch(matchId){
-      const match = state.matches.find((entry) => entry.id === matchId);
-      if(!match) return;
-
-      editMatchIdInput.value = match.id;
-      matchDateInput.value = match.date;
-      gameNameInput.value = match.gameName;
-      gameTypeInput.value = match.gameType;
-      scoreDirectionInput.value = match.scoreDirection;
-      playersContainer.innerHTML = '';
-      match.players.forEach((player) => addPlayerRow(player));
-      saveMatchBtn.textContent = 'Update Match & Recalculate HR';
-      cancelEditBtn.style.display = 'inline-flex';
-      showPage('app');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function cancelEdit(){
-      resetForm();
-    }
-
-    function resetForm(){
-      matchForm.reset();
-      editMatchIdInput.value = '';
-      playersContainer.innerHTML = '';
-      matchDateInput.value = todayISO();
-      gameTypeInput.value = 'Board Game';
-      scoreDirectionInput.value = 'high';
-      addPlayerRow();
-      addPlayerRow();
-      saveMatchBtn.textContent = 'Save Match & Update HR';
-      cancelEditBtn.style.display = 'none';
-    }
-
-    async function resetAllData(){
-      if(!window.confirm('This will erase all stored players and match history. Continue?')){
-        return;
-      }
-
-      state = structuredCloneSafe(DEFAULT_STATE);
-      await saveState();
-      renderAll();
-      resetForm();
-    }
-
-    function setStorageStatus(message){
-      storageStatusEl.innerHTML = `<strong>Storage:</strong> ${escapeHtml(message)}`;
-    }
-
-    function todayISO(){
-      return new Date().toISOString().split('T')[0];
-    }
-
-    function formatDate(value){
-      const date = new Date(value + 'T00:00:00');
-      return date.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-    }
-
-    function escapeHtml(value){
-      return String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
     }
   </script>
 </body>
