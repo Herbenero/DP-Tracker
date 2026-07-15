@@ -919,10 +919,19 @@
 
   <script>
     const STORAGE_KEY = 'hellcastle-rating-app-v1';
-    const ONLINE_STORAGE_URL = 'https://api.sheety.co/50f7bb553f92da0130909cfa709f7862/hrMatches/matches';
-    const ONLINE_STORAGE_HEADERS = {
-      'Content-Type': 'application/json'
-    };
+    const SHEET_API_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE";
+
+async function loadMatches() {
+  try {
+    const response = await fetch(SHEET_API_URL);
+    const matches = await response.json();
+    console.log("Loaded matches from Google Sheets:", matches);
+    // Parse matches to calculate your leaderboards/HR state here
+  } catch (err) {
+    console.error("Failed to fetch matches, falling back to local storage:", err);
+    // fallback to local storage
+  }
+}
     const DEFAULT_STATE = { players: {}, matches: [] };
 
     let state = structuredCloneSafe(DEFAULT_STATE);
@@ -1018,60 +1027,21 @@
       }
     }
 
-    async function loadState(){
-      const localFallback = loadLocalState();
-
-      try{
-        const response = await fetchWithTimeout(ONLINE_STORAGE_URL, {
-          method: 'GET',
-          headers: ONLINE_STORAGE_HEADERS
-        }, 12000);
-
-        if(!response.ok){
-          throw new Error(`Load failed with status ${response.status}`);
-        }
-
-        const payload = await response.json();
-        const rows = Array.isArray(payload?.matches) ? payload.matches : [];
-
-        if(rows.length === 0){
-          state = normalizeState(localFallback);
-          usingOnlineStorage = false;
-          setStorageStatus('Online storage reachable, no remote rows found. Using local data.');
-          return;
-        }
-
-        const latest = rows
-          .map(row => {
-            if(!row || typeof row !== 'object') return null;
-            if(!row.stateJson) return null;
-            try{
-              return JSON.parse(row.stateJson);
-            }catch(err){
-              return null;
-            }
-          })
-          .filter(Boolean)
-          .pop();
-
-        if(latest){
-          state = normalizeState(latest);
-          usingOnlineStorage = true;
-          saveLocalState(state);
-          setStorageStatus('Connected to online storage (Sheety).');
-        }else{
-          state = normalizeState(localFallback);
-          usingOnlineStorage = false;
-          setStorageStatus('Online rows were unreadable. Using local storage fallback.');
-        }
-      }catch(error){
-        console.error('Error loading Sheety data:', error);
-        state = normalizeState(localFallback);
-        usingOnlineStorage = false;
-        setStorageStatus('Offline mode (local storage fallback).');
-      }
-    }
-
+    async function saveMatchOnline(newMatchObject) {
+  try {
+    const response = await fetch(SHEET_API_URL, {
+      method: "POST",
+      mode: "no-cors", // Required for Google Apps Script redirects
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(newMatchObject)
+    });
+    console.log("Match data successfully sent to Google Sheets!");
+  } catch (err) {
+    console.error("Failed to stream match data online:", err);
+  }
+}
     async function saveState(){
       saveLocalState(state);
 
