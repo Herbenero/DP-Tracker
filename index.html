@@ -1,190 +1,708 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Countup Multi-Device Tracker</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Count Up (Multiplayer Sync)</title>
+  <meta name="description" content="Count Up darts app — multi-device room synchronization, local history & leaderboard" />
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; background: #121212; color: #fff; margin: 0; padding: 20px; }
-    .container { max-width: 600px; margin: 0 auto; background: #1e1e1e; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-    .status-box { display: flex; justify-content: space-around; font-size: 1.2rem; margin-bottom: 20px; background: #2a2a2a; padding: 10px; border-radius: 6px; }
-    .player-card { flex: 1; margin: 5px; padding: 10px; border-radius: 6px; border: 2px solid transparent; }
-    .active-player { border-color: #00e676; background: #26382b; }
-    .button-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px; }
-    button { background: #333; color: #fff; border: 1px solid #555; padding: 15px; font-size: 1.1rem; border-radius: 4px; cursor: pointer; }
-    button:hover { background: #444; }
-    button:active { background: #666; }
-    .btn-action { background: #d32f2f; }
-    .btn-action:hover { background: #f44336; }
+    :root {
+      --bg: #f5efe5;
+      --ink: #1d1916;
+      --muted: #6d6257;
+      --accent: #b44d2c;
+      --good: #2f7d4d;
+      --warn: #9b2e2e;
+      --paper: #faf4eb;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+      background: var(--bg);
+      color: var(--ink);
+      padding: 18px;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    h1 { margin: 0; font-size: 1.6rem; }
+    .controls-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .panel { background: var(--paper); padding: 14px; border-radius: var(--radius); box-shadow: 0 6px 18px rgba(0,0,0,.06); }
+    #missBtn { color: #0a0000; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+    .player-list { display: grid; gap: 8px; margin-top: 8px; }
+    .player-row { display: flex; gap: 8px; }
+    input[type="text"], select { padding: 8px; border-radius: 8px; border: 1px solid #ddd; }
+    input[type="text"] { flex: 1; }
+    button { padding: 8px 12px; border-radius: 8px; border: 0; background: #eee; cursor: pointer; font-weight: bold; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #d96f47); color: white; }
+    .btn-alt { background: #1e5b6d; color: white; }
+    .btn-warn { background: linear-gradient(135deg, #8f2d2d, #b34343); color: white; }
+    .room-bar { display: flex; gap: 12px; align-items: center; background: #fff; padding: 12px; border-radius: var(--radius); margin-bottom: 14px; border: 1px solid #eee; flex-wrap: wrap; }
+    .room-tag { font-weight: 800; padding: 4px 8px; background: #e2f0d9; color: #2e5b1e; border-radius: 6px; }
+    .game-grid { display: grid; grid-template-columns: 1fr 420px; gap: 16px; margin-top: 18px; }
+    .meta-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 12px; }
+    .meta { background: #fff; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #eee; }
+    .meta .k { font-size: .75rem; color: var(--muted); text-transform: uppercase; }
+    .meta .v { font-weight: 800; font-size: 1.25rem; }
+    .mult-row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .mult-btn { padding: 10px; border-radius: 8px; border: 1px solid #ddd; background: #fff; cursor: pointer; }
+    .mult-btn.active { outline: 3px solid rgba(30, 91, 109, .3); background: #e0f2f1; }
+    .targets { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .target-btn { padding: 14px; border-radius: 8px; background: #fff; border: 1px solid #ddd; font-weight: 800; cursor: pointer; }
+    .target-btn.bull { background: linear-gradient(180deg, #fff6c9, #f7c65f); color: #5a3a10; }
+    .actions { display: flex; gap: 8px; margin-top: 12px; }
+    .announce { margin-top: 12px; padding: 10px; border-radius: 8px; background: #fff; border: 1px solid #eee; min-height: 44px; }
+    .table-wrap { max-height: 400px; overflow-y: auto; margin-top: 8px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px; border: 1px solid #eee; text-align: center; }
+    th { background: #fafafa; font-size: .8rem; color: var(--muted); position: sticky; top: 0; }
+    td.total { font-weight: 900; }
+    .side-panel { display: flex; flex-direction: column; gap: 12px; }
+    .list { max-height: 420px; overflow: auto; padding-right: 6px; }
+    .hidden { display: none !important; }
+    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.65); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+    .modal-content { background: var(--paper); padding: 24px; border-radius: var(--radius); text-align: center; min-width: 320px; max-width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    @media (max-width: 980px) {
+      .game-grid { grid-template-columns: 1fr; }
+      .meta-strip { grid-template-columns: repeat(3, 1fr); }
+    }
   </style>
 </head>
 <body>
-
   <div class="container">
-    <h2>Countup Multi-Device Tracker</h2>
-
-    <div class="status-box">
-      <div id="p1-card" class="player-card">
-        <h3>Player 1</h3>
-        <p>Score: <span id="p1-score">0</span></p>
+    <header>
+      <div>
+        <h1>Count Up — Multiplayer</h1>
+        <div style="color:var(--muted);font-size:.9rem">Multi-device cloud synced room scoring</div>
       </div>
-      <div id="p2-card" class="player-card">
-        <h3>Player 2</h3>
-        <p>Score: <span id="p2-score">0</span></p>
+      <div class="controls-row">
+        <button id="leaderboardToggle" class="btn-alt">Leaderboard</button>
+        <button id="historyToggle" class="btn">History</button>
+      </div>
+    </header>
+
+    <!-- Room Control Bar -->
+    <div class="room-bar">
+      <div>
+        <strong>Room Status:</strong> <span id="roomStatusTag" class="room-tag">Offline (Local Only)</span>
+      </div>
+      <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+        <input type="text" id="joinRoomCodeInput" placeholder="4-Digit Code" style="width:110px; text-transform:uppercase;" />
+        <button id="joinRoomBtn" class="btn-alt">Join Room</button>
+        <button id="createRoomBtn" class="btn-primary">Host New Room</button>
       </div>
     </div>
 
-    <div>
-      <p>Current Turn: <strong>Player <span id="current-player-display">1</span></strong></p>
-      <p>Round: <span id="current-round-display">1</span> | Dart: <span id="current-dart-display">1</span></p>
+    <!-- Setup Panel -->
+    <section class="panel" id="setupPanel">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+        <div>
+          <div style="font-weight:800">Players</div>
+          <div style="color:var(--muted);font-size:.9rem">Add players for this match</div>
+        </div>
+        <div>
+          <button id="addPlayerBtn" class="btn">Add Player</button>
+          <button id="removePlayerBtn" class="btn">Remove</button>
+        </div>
+      </div>
+      <div class="player-list" id="playerList"></div>
+      <div style="display:flex;gap:12px;margin-top:10px;align-items:center;flex-wrap:wrap">
+        <div>
+          <label style="font-size:.85rem;color:var(--muted);display:block">Board Type</label>
+          <select id="boardType">
+            <option value="basic">Basic Board</option>
+            <option value="quad">Quad Board</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:.85rem;color:var(--muted);display:block">Game Mode</label>
+          <select id="gameMode">
+            <option>Count Up</option>
+            <option>Count Up15</option>
+            <option>Quickdraw</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:.85rem;color:var(--muted);display:block">Match Date</label>
+          <input id="matchDate" type="date" />
+        </div>
+        <div style="margin-left:auto">
+          <button id="startGameBtn" class="btn-primary">Start Game</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Active Game Grid -->
+    <div class="game-grid" id="gameGrid">
+      <div>
+        <section class="panel" id="gamePanel">
+          <div class="meta-strip">
+            <div class="meta"><div class="k">Current</div><div class="v" id="currentPlayer">—</div></div>
+            <div class="meta"><div class="k">Mode</div><div class="v" id="modeLabel">—</div></div>
+            <div class="meta"><div class="k">Round</div><div class="v" id="roundLabel">—</div></div>
+            <div class="meta"><div class="k">Dart</div><div class="v" id="dartLabel">—</div></div>
+            <div class="meta"><div class="k">Mult</div><div class="v" id="multLabel">Single</div></div>
+          </div>
+          <div style="margin-top:6px;font-size:.9rem;color:var(--muted)">Select multiplier then target. 3 darts per turn.</div>
+          <div class="mult-row" id="multRow" style="margin-top:10px">
+            <button class="mult-btn active" data-mult="1">Single</button>
+            <button class="mult-btn" data-mult="2">Double</button>
+            <button class="mult-btn" data-mult="3">Triple</button>
+            <button class="mult-btn hidden" id="quadBtn" data-mult="4">Quad</button>
+            <button id="missBtn" class="mult-btn btn-warn">Miss</button>
+          </div>
+          <div class="targets panel" id="targetGrid" style="margin-top:12px"></div>
+          <div class="actions">
+            <button id="undoBtn" class="btn">Undo</button>
+            <button id="endTurnBtn" class="btn">End Turn</button>
+            <button id="newGameBtn" class="btn-warn">New Game</button>
+          </div>
+          <div class="announce" id="announcement">Create or join a room to begin.</div>
+        </section>
+      </div>
+      <aside class="side-panel">
+        <section class="panel">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><strong>Scoreboard</strong><div style="font-size:.85rem;color:var(--muted)">Live scoreboard</div></div>
+            <div id="scoreboardControls" style="display:flex;gap:6px"></div>
+          </div>
+          <div class="table-wrap">
+            <table id="scoreTable">
+              <thead id="scoreHead"></thead>
+              <tbody id="scoreBody"></tbody>
+            </table>
+          </div>
+        </section>
+        <section class="panel" id="historyPanel">
+          <strong>Match History</strong>
+          <div class="list" id="historyList"></div>
+        </section>
+        <section class="panel hidden" id="leaderboardPanel">
+          <strong>Leaderboard</strong>
+          <div class="list" id="leaderboardList"></div>
+        </section>
+      </aside>
     </div>
 
-    <div class="button-grid" id="input-board">
-      <!-- Input Score Buttons -->
-      <button data-value="1">1</button>
-      <button data-value="5">5</button>
-      <button data-value="10">10</button>
-      <button data-value="20">20</button>
-      <button data-value="25">25 (Bull)</button>
-      <button data-value="50">50 (D-Bull)</button>
-      <button data-value="0">0 (Miss)</button>
-      <button id="btn-next-player" class="btn-action">Next Player</button>
-      <button id="btn-reset" class="btn-action" style="grid-column: span 4;">Reset Game</button>
+    <!-- Final Summary Panel -->
+    <section class="panel hidden" id="finalPanel" style="margin-top:14px">
+      <strong>Final Scoreboard</strong>
+      <div id="finalSummary" style="color:var(--muted);margin-top:6px">Match complete</div>
+      <table style="margin-top:8px;width:100%">
+        <thead id="finalHead"></thead>
+        <tbody id="finalBody"></tbody>
+      </table>
+    </section>
+
+    <!-- Role / Device Selector Modal -->
+    <div id="roleModal" class="modal hidden">
+      <div class="modal-content">
+        <h2>Joined Room <span id="modalRoomCode"></span></h2>
+        <p style="color:var(--muted)">Who is using this device?</p>
+        <div id="roleOptionsList" style="display:grid; gap:10px; margin:20px 0;"></div>
+      </div>
+    </div>
+
+    <!-- Event Summary Modal -->
+    <div id="eventSummaryModal" class="modal hidden">
+      <div class="modal-content">
+        <h2>Event Complete!</h2>
+        <h3 style="color:var(--muted);margin-top:0">Overall Leaderboard</h3>
+        <table>
+          <thead>
+            <tr><th>Rank</th><th>Player</th><th>Total Score</th></tr>
+          </thead>
+          <tbody id="overallLeaderboardBody"></tbody>
+        </table>
+        <button id="nextEventBtn" class="btn-primary" style="margin-top:16px">NEXT EVENT</button>
+      </div>
     </div>
   </div>
 
-  <!-- Firebase Modular JS SDK -->
+  <!-- Firebase Integration Script -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     // Firebase Config
-    const firebaseConfig = {
-      databaseURL: "https://countupmultivice-default-rtdb.firebaseio.com"
-    };
-
+    const firebaseConfig = { databaseURL: "https://countupmultivice-default-rtdb.firebaseio.com" };
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    
-    // Default room ID reference matches database structure
-    const roomId = "9597"; 
-    const gameStateRef = ref(db, `${roomId}/state`);
 
-    // UI Elements
-    const p1ScoreEl = document.getElementById("p1-score");
-    const p2ScoreEl = document.getElementById("p2-score");
-    const p1Card = document.getElementById("p1-card");
-    const p2Card = document.getElementById("p2-card");
-    const currentPlayerDisplay = document.getElementById("current-player-display");
-    const currentRoundDisplay = document.getElementById("current-round-display");
-    const currentDartDisplay = document.getElementById("current-dart-display");
-    const inputBoard = document.getElementById("input-board");
+    const STORAGE_KEYS = {
+      matches: "countup_matches_multiv1",
+      leaderboard: "countup_leaderboard_multiv1"
+    };
 
-    let localState = {};
+    const MODE_ROUNDS = {
+      "Count Up": 8,
+      "Count Up15": 15,
+      "Quickdraw": 3
+    };
 
-    // 1. Synchronize App with Firebase Realtime State
-    onValue(gameStateRef, (snapshot) => {
-      const state = snapshot.val();
-      if (!state) {
-        initGameState(); // Initialize database if empty
-        return;
-      }
+    let currentRoomCode = null;
+    let assignedPlayerIndex = null; // null = Scoreboard/Spectator mode
 
-      localState = state;
+    const state = {
+      players: ["Player 1", "Player 2"],
+      mode: "Count Up",
+      boardType: "basic",
+      totalRounds: 8,
+      currentPlayer: 0,
+      currentRound: 1,
+      currentDart: 1,
+      multiplier: 1,
+      gameStarted: false,
+      gameOver: false,
+      totals: [],
+      roundScores: [],
+      dartScores: [],
+      historyStack: [],
+      selectedDate: "",
+      finalSaved: false
+    };
 
-      // Ensure dartScores object structure exists for both players
-      const p1Score = state.dartScores && state.dartScores["1"] ? state.dartScores["1"] : 0;
-      const p2Score = state.dartScores && state.dartScores["2"] ? state.dartScores["2"] : 0;
+    const els = {
+      playerList: document.getElementById("playerList"),
+      addPlayerBtn: document.getElementById("addPlayerBtn"),
+      removePlayerBtn: document.getElementById("removePlayerBtn"),
+      startGameBtn: document.getElementById("startGameBtn"),
+      matchDate: document.getElementById("matchDate"),
+      gameMode: document.getElementById("gameMode"),
+      boardType: document.getElementById("boardType"),
+      quadBtn: document.getElementById("quadBtn"),
+      targetGrid: document.getElementById("targetGrid"),
+      multRow: document.getElementById("multRow"),
+      multButtons: () => Array.from(document.querySelectorAll(".mult-btn[data-mult]")),
+      missBtn: document.getElementById("missBtn"),
+      undoBtn: document.getElementById("undoBtn"),
+      endTurnBtn: document.getElementById("endTurnBtn"),
+      newGameBtn: document.getElementById("newGameBtn"),
+      announcement: document.getElementById("announcement"),
+      currentPlayer: document.getElementById("currentPlayer"),
+      modeLabel: document.getElementById("modeLabel"),
+      roundLabel: document.getElementById("roundLabel"),
+      dartLabel: document.getElementById("dartLabel"),
+      multLabel: document.getElementById("multLabel"),
+      scoreHead: document.getElementById("scoreHead"),
+      scoreBody: document.getElementById("scoreBody"),
+      finalPanel: document.getElementById("finalPanel"),
+      finalHead: document.getElementById("finalHead"),
+      finalBody: document.getElementById("finalBody"),
+      finalSummary: document.getElementById("finalSummary"),
+      historyList: document.getElementById("historyList"),
+      leaderboardList: document.getElementById("leaderboardList"),
+      leaderboardPanel: document.getElementById("leaderboardPanel"),
+      historyPanel: document.getElementById("historyPanel"),
+      leaderboardToggle: document.getElementById("leaderboardToggle"),
+      historyToggle: document.getElementById("historyToggle"),
+      setupPanel: document.getElementById("setupPanel"),
+      eventSummaryModal: document.getElementById("eventSummaryModal"),
+      overallLeaderboardBody: document.getElementById("overallLeaderboardBody"),
+      nextEventBtn: document.getElementById("nextEventBtn"),
+      roomStatusTag: document.getElementById("roomStatusTag"),
+      createRoomBtn: document.getElementById("createRoomBtn"),
+      joinRoomBtn: document.getElementById("joinRoomBtn"),
+      joinRoomCodeInput: document.getElementById("joinRoomCodeInput"),
+      roleModal: document.getElementById("roleModal"),
+      modalRoomCode: document.getElementById("modalRoomCode"),
+      roleOptionsList: document.getElementById("roleOptionsList")
+    };
 
-      // Update UI elements
-      p1ScoreEl.textContent = p1Score;
-      p2ScoreEl.textContent = p2Score;
-      currentPlayerDisplay.textContent = state.currentPlayer || 1;
-      currentRoundDisplay.textContent = state.currentRound || 1;
-      currentDartDisplay.textContent = state.currentDart || 1;
+    function todayStr() {
+      const d = new Date();
+      const tz = d.getTimezoneOffset();
+      return new Date(d.getTime() - tz * 60000).toISOString().slice(0, 10);
+    }
 
-      // Highlight turn active player card
-      if (state.currentPlayer === 2) {
-        p2Card.classList.add("active-player");
-        p1Card.classList.remove("active-player");
-      } else {
-        p1Card.classList.add("active-player");
-        p2Card.classList.remove("active-player");
-      }
-    });
+    function getStorage(key, fallback) {
+      try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch (e) { return fallback; }
+    }
 
-    // Initialize Default Database Structure
-    function initGameState() {
-      set(gameStateRef, {
-        boardType: "basic",
-        currentDart: 1,
-        currentPlayer: 1,
-        currentRound: 1,
-        dartScores: { "1": 0, "2": 0 },
-        gameOver: false,
-        gameStarted: true
+    function setStorage(key, value) {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+
+    function deepClone(obj) {
+      return JSON.parse(JSON.stringify(obj));
+    }
+
+    // Cloud Sync Methods
+    function pushStateToCloud() {
+      if (!currentRoomCode) return;
+      set(ref(db, 'rooms/' + currentRoomCode + '/state'), state);
+    }
+
+    function listenToRoom(roomCode) {
+      currentRoomCode = roomCode;
+      const roomRef = ref(db, 'rooms/' + roomCode);
+      onValue(roomRef, (snapshot) => {
+        const roomData = snapshot.val();
+        if (roomData && roomData.state) {
+          Object.assign(state, roomData.state);
+          if (state.boardType === "quad") els.quadBtn.classList.remove("hidden");
+          else els.quadBtn.classList.add("hidden");
+          
+          if (state.gameStarted) els.setupPanel.classList.add("hidden");
+          
+          updateMeta();
+          renderScoreboard();
+          renderFinalBoard();
+          updateButtonLocks();
+        }
       });
     }
 
-    // 2. Handle Inputs & Write to DB for Active Player (P1 or P2)
-    inputBoard.addEventListener("click", (e) => {
-      if (!e.target.matches("button")) return;
+    function updateButtonLocks() {
+      // Offline mode or active turn matching assigned player allows input
+      const isOffline = !currentRoomCode;
+      const isMyTurn = isOffline || (assignedPlayerIndex !== null && assignedPlayerIndex === state.currentPlayer && state.gameStarted && !state.gameOver);
+      
+      const interactiveButtons = document.querySelectorAll('.target-btn, .mult-btn, #undoBtn, #endTurnBtn, #missBtn');
+      interactiveButtons.forEach(btn => {
+        btn.disabled = !isMyTurn;
+        btn.style.opacity = isMyTurn ? "1" : "0.35";
+        btn.style.pointerEvents = isMyTurn ? "auto" : "none";
+      });
+    }
 
-      // Handle Reset
-      if (e.target.id === "btn-reset") {
-        initGameState();
-        return;
-      }
-
-      // Handle Next Player manual toggle
-      if (e.target.id === "btn-next-player") {
-        switchPlayer();
-        return;
-      }
-
-      const scoreVal = parseInt(e.target.dataset.value);
-      if (isNaN(scoreVal)) return;
-
-      recordScoreInput(scoreVal);
+    // Room Hosting & Joining Handlers
+    els.createRoomBtn.addEventListener("click", () => {
+      const code = Math.floor(1000 + Math.random() * 9000).toString();
+      assignedPlayerIndex = 0; // Host defaults to Player 1
+      currentRoomCode = code;
+      els.roomStatusTag.textContent = `Room Code: ${code} (Player 1 Host)`;
+      els.roomStatusTag.style.background = "#cce5ff";
+      els.roomStatusTag.style.color = "#004085";
+      pushStateToCloud();
+      listenToRoom(code);
+      alert(`Room Created! Share Code: ${code}`);
     });
 
-    function recordScoreInput(value) {
-      const activePlayer = localState.currentPlayer || 1;
-      const currentScores = localState.dartScores || { "1": 0, "2": 0 };
+    els.joinRoomBtn.addEventListener("click", () => {
+      const code = els.joinRoomCodeInput.value.trim().toUpperCase();
+      if (!code) return alert("Enter a valid 4-digit code");
       
-      // Dynamic score addition explicitly targeting P1 or P2
-      const newScore = (currentScores[activePlayer] || 0) + value;
-      let newDart = (localState.currentDart || 1) + 1;
-      let nextPlayer = activePlayer;
-      let nextRound = localState.currentRound || 1;
+      const roomRef = ref(db, 'rooms/' + code);
+      onValue(roomRef, (snapshot) => {
+        const roomData = snapshot.val();
+        if (!roomData) { alert("Room not found!"); return; }
+        
+        currentRoomCode = code;
+        els.modalRoomCode.textContent = code;
+        els.roleOptionsList.innerHTML = "";
 
-      // Advance dart count / turn logic (3 Darts per Turn)
-      if (newDart > 3) {
-        newDart = 1;
-        if (activePlayer === 1) {
-          nextPlayer = 2; // Pass turn to Player 2
+        const playerList = roomData.state?.players || ["Player 1", "Player 2"];
+        playerList.forEach((name, idx) => {
+          const btn = document.createElement("button");
+          btn.className = "btn-alt";
+          btn.textContent = `Control: ${name}`;
+          btn.addEventListener("click", () => {
+            assignedPlayerIndex = idx;
+            els.roomStatusTag.textContent = `Room: ${code} (${name})`;
+            els.roleModal.classList.add("hidden");
+            listenToRoom(code);
+            updateButtonLocks();
+          });
+          els.roleOptionsList.appendChild(btn);
+        });
+
+        const specBtn = document.createElement("button");
+        specBtn.className = "btn-primary";
+        specBtn.textContent = "TV / Scoreboard Only (View Only)";
+        specBtn.addEventListener("click", () => {
+          assignedPlayerIndex = null;
+          els.roomStatusTag.textContent = `Room: ${code} (Scoreboard Mode)`;
+          els.roleModal.classList.add("hidden");
+          listenToRoom(code);
+          updateButtonLocks();
+        });
+        els.roleOptionsList.appendChild(specBtn);
+
+        els.roleModal.classList.remove("hidden");
+      }, { onlyOnce: true });
+    });
+
+    // Setup & Input Controls
+    function addPlayerField(name = "") {
+      const index = els.playerList.children.length + 1;
+      const row = document.createElement("div");
+      row.className = "player-row";
+      row.innerHTML = `
+        <input type="text" placeholder="Player ${index} name" value="${name.replaceAll('"', '&quot;')}" />
+        <button class="btn remove" title="Remove">✕</button>
+      `;
+      row.querySelector(".remove").addEventListener("click", () => {
+        if (els.playerList.children.length <= 1) return;
+        row.remove();
+        refreshPlayerPlaceholders();
+      });
+      els.playerList.appendChild(row);
+      refreshPlayerPlaceholders();
+    }
+
+    function refreshPlayerPlaceholders() {
+      Array.from(els.playerList.children).forEach((row, idx) => {
+        row.querySelector("input").placeholder = `Player ${idx + 1} name`;
+      });
+      Array.from(els.playerList.querySelectorAll(".remove")).forEach(btn => {
+        btn.style.visibility = els.playerList.children.length <= 1 ? "hidden" : "visible";
+      });
+    }
+
+    els.addPlayerBtn.addEventListener("click", () => addPlayerField());
+    els.removePlayerBtn.addEventListener("click", () => {
+      if (els.playerList.children.length > 1) {
+        els.playerList.lastElementChild.remove();
+        refreshPlayerPlaceholders();
+      }
+    });
+
+    function getPlayerNamesFromInputs() {
+      return Array.from(els.playerList.querySelectorAll("input"))
+        .map(i => i.value.trim())
+        .filter(Boolean);
+    }
+
+    function buildTargetButtons() {
+      els.targetGrid.innerHTML = "";
+      for (let i = 1; i <= 20; i++) {
+        const btn = document.createElement("button");
+        btn.className = "target-btn";
+        btn.textContent = i;
+        btn.dataset.target = i;
+        btn.addEventListener("click", () => recordThrow(Number(btn.dataset.target)));
+        els.targetGrid.appendChild(btn);
+      }
+      const bull = document.createElement("button");
+      bull.className = "target-btn bull";
+      bull.textContent = "Bull";
+      bull.dataset.target = "BULL";
+      bull.addEventListener("click", () => recordThrow("BULL"));
+      els.targetGrid.appendChild(bull);
+    }
+
+    function resetStateForGame() {
+      state.totalRounds = MODE_ROUNDS[state.mode] ?? 8;
+      state.currentPlayer = 0;
+      state.currentRound = 1;
+      state.currentDart = 1;
+      state.multiplier = 1;
+      state.gameStarted = true;
+      state.gameOver = false;
+      state.totals = state.players.map(() => 0);
+      state.roundScores = state.players.map(() => Array(state.totalRounds).fill(0));
+      state.dartScores = state.players.map(() => Array.from({ length: state.totalRounds }, () => []));
+      state.historyStack = [];
+      state.finalSaved = false;
+
+      if (state.boardType === "quad") els.quadBtn.classList.remove("hidden");
+      else els.quadBtn.classList.add("hidden");
+
+      setAnnouncement(`${state.players[0]} to throw first.`);
+      updateMeta();
+      renderScoreboard();
+      renderFinalBoard();
+      els.finalPanel.classList.add("hidden");
+      els.eventSummaryModal.classList.add("hidden");
+      
+      pushStateToCloud();
+      updateButtonLocks();
+    }
+
+    els.startGameBtn.addEventListener("click", () => {
+      const names = getPlayerNamesFromInputs();
+      if (names.length < 1) {
+        setAnnouncement("Enter at least one player name to start.", "warn");
+        return;
+      }
+      state.players = names.slice();
+      state.boardType = els.boardType.value;
+      state.mode = els.gameMode.value;
+      state.selectedDate = els.matchDate.value || todayStr();
+      buildTargetButtons();
+      resetStateForGame();
+      els.setupPanel.classList.add("hidden");
+    });
+
+    function updateMeta() {
+      els.currentPlayer.textContent = state.players[state.currentPlayer] ?? "—";
+      els.modeLabel.textContent = `${state.mode}${state.boardType === "quad" ? " (Quad)" : ""}`;
+      els.roundLabel.textContent = `${Math.min(state.currentRound, state.totalRounds)} / ${state.totalRounds}`;
+      els.dartLabel.textContent = `${state.currentDart} / 3`;
+      els.multLabel.textContent = state.multiplier === 1 ? "Single" : state.multiplier === 2 ? "Double" : state.multiplier === 3 ? "Triple" : "Quad";
+      
+      els.multButtons().forEach(b => b.classList.toggle("active", Number(b.dataset.mult) === state.multiplier));
+    }
+
+    function setAnnouncement(msg, type = "") {
+      els.announcement.textContent = msg;
+      els.announcement.className = type ? `announce ${type}` : "announce";
+    }
+
+    function saveSnapshot() {
+      state.historyStack.push(deepClone({
+        players: state.players,
+        mode: state.mode,
+        boardType: state.boardType,
+        totalRounds: state.totalRounds,
+        currentPlayer: state.currentPlayer,
+        currentRound: state.currentRound,
+        currentDart: state.currentDart,
+        multiplier: state.multiplier,
+        gameStarted: state.gameStarted,
+        gameOver: state.gameOver,
+        totals: state.totals,
+        roundScores: state.roundScores,
+        dartScores: state.dartScores
+      }));
+    }
+
+    function recordThrow(target) {
+      if (!state.gameStarted || state.gameOver) return;
+      saveSnapshot();
+
+      let points = 0;
+      let label = "";
+
+      if (target === 0) {
+        points = 0;
+        label = "MISS";
+      } else if (target === "BULL") {
+        if (state.multiplier === 2) {
+          points = 50;
+          label = "D-BULL";
         } else {
-          nextPlayer = 1; // Pass turn back to Player 1
-          nextRound += 1;
+          points = 25;
+          label = "S-BULL";
+        }
+      } else {
+        const base = Number(target);
+        points = base * state.multiplier;
+        const prefix = state.multiplier === 4 ? "Q" : state.multiplier === 3 ? "T" : state.multiplier === 2 ? "D" : "S";
+        label = `${prefix}${base}`;
+      }
+
+      const pIdx = state.currentPlayer;
+      const rIdx = state.currentRound - 1;
+
+      state.dartScores[pIdx][rIdx].push(label);
+      state.roundScores[pIdx][rIdx] += points;
+      state.totals[pIdx] += points;
+
+      setAnnouncement(`${state.players[pIdx]} threw ${label} (+${points} pts).`);
+
+      state.multiplier = 1;
+      if (state.currentDart < 3) {
+        state.currentDart++;
+      } else {
+        advanceTurn();
+      }
+
+      updateMeta();
+      renderScoreboard();
+      pushStateToCloud();
+      updateButtonLocks();
+    }
+
+    function advanceTurn() {
+      state.currentDart = 1;
+      if (state.currentPlayer < state.players.length - 1) {
+        state.currentPlayer++;
+      } else {
+        state.currentPlayer = 0;
+        if (state.currentRound < state.totalRounds) {
+          state.currentRound++;
+        } else {
+          endGame();
         }
       }
-
-      // Update Database - triggers dynamic change for both devices
-      update(gameStateRef, {
-        [`dartScores/${activePlayer}`]: newScore,
-        currentDart: newDart,
-        currentPlayer: nextPlayer,
-        currentRound: nextRound
-      });
     }
 
-    function switchPlayer() {
-      const nextPlayer = localState.currentPlayer === 1 ? 2 : 1;
-      update(gameStateRef, {
-        currentPlayer: nextPlayer,
-        currentDart: 1
-      });
+    function endGame() {
+      state.gameOver = true;
+      updateMeta();
+      renderFinalBoard();
+      els.finalPanel.classList.remove("hidden");
+      setAnnouncement("Game over! Check final scoreboard.");
+      pushStateToCloud();
     }
+
+    // Multiplier selections
+    els.multButtons().forEach(btn => {
+      btn.addEventListener("click", () => {
+        state.multiplier = Number(btn.dataset.mult);
+        updateMeta();
+        pushStateToCloud();
+      });
+    });
+
+    els.missBtn.addEventListener("click", () => recordThrow(0));
+
+    els.undoBtn.addEventListener("click", () => {
+      if (!state.historyStack.length) return;
+      const prev = state.historyStack.pop();
+      Object.assign(state, prev);
+      updateMeta();
+      renderScoreboard();
+      renderFinalBoard();
+      pushStateToCloud();
+      updateButtonLocks();
+    });
+
+    els.endTurnBtn.addEventListener("click", () => {
+      if (!state.gameStarted || state.gameOver) return;
+      saveSnapshot();
+      advanceTurn();
+      updateMeta();
+      renderScoreboard();
+      pushStateToCloud();
+      updateButtonLocks();
+    });
+
+    els.newGameBtn.addEventListener("click", () => {
+      if (confirm("Reset game state and start new match?")) {
+        resetStateForGame();
+      }
+    });
+
+    function renderScoreboard() {
+      els.scoreHead.innerHTML = `<tr><th>Round</th>${state.players.map(p => `<th>${p}</th>`).join('')}</tr>`;
+      let html = "";
+      for (let r = 0; r < state.totalRounds; r++) {
+        html += `<tr><td><strong>R${r + 1}</strong></td>`;
+        for (let p = 0; p < state.players.length; p++) {
+          const score = state.roundScores[p]?.[r] ?? 0;
+          const darts = (state.dartScores[p]?.[r] ?? []).join(', ');
+          html += `<td>${score} <div style="font-size:0.75rem;color:var(--muted)">${darts}</div></td>`;
+        }
+        html += `</tr>`;
+      }
+      html += `<tr><td><strong>Total</strong></td>${state.totals.map(t => `<td class="total">${t}</td>`).join('')}</tr>`;
+      els.scoreBody.innerHTML = html;
+    }
+
+    function renderFinalBoard() {
+      els.finalHead.innerHTML = `<tr><th>Rank</th><th>Player</th><th>Total Score</th></tr>`;
+      const ranked = state.players.map((p, i) => ({ name: p, score: state.totals[i] }))
+        .sort((a, b) => b.score - a.score);
+      
+      els.finalBody.innerHTML = ranked.map((item, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td><strong>${item.name}</strong></td>
+          <td>${item.score}</td>
+        </tr>
+      `).join('');
+    }
+
+    // Default setup initialization
+    addPlayerField("Player 1");
+    addPlayerField("Player 2");
+    els.matchDate.value = todayStr();
+    buildTargetButtons();
+    updateButtonLocks();
   </script>
 </body>
 </html>
